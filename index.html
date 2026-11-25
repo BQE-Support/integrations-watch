@@ -1,0 +1,1950 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integrations Watch</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233454D1'/%3E%3Ctext x='16' y='22' font-size='17' text-anchor='middle' fill='white' font-family='Georgia'%3EQ%3C/text%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<script src="bqe-board.js"></script>
+<style>
+  :root {
+    --bg: #F5F6F9;
+    --surface: #FFFFFF;
+    --surface-alt: #ECEFF5;
+    --border: #DDE1EA;
+    --ink: #16213E;
+    --ink-2: #47517A;
+    --ink-3: #8890AC;
+    --accent: #3454D1;
+    --accent-soft: #E7EBFB;
+    --good: #1E8A5F;
+    --good-soft: #E4F5EC;
+    --warning: #B8801E;
+    --warning-soft: #FBF1DE;
+    --critical: #C23B3B;
+    --critical-soft: #FBE7E4;
+    --seg-main: #3454D1;
+    --seg-premium: #1E8A8A;
+    --seg-low: #7A4FA0;
+    --shadow: 0 1px 2px rgba(22,33,62,0.06), 0 6px 16px rgba(22,33,62,0.06);
+    --serif: Georgia, "Iowan Old Style", "Source Serif 4", "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0C1220; --surface: #131A2B; --surface-alt: #1B2438; --border: #29334A;
+      --ink: #E9ECF6; --ink-2: #B0B7D1; --ink-3: #7C86A3;
+      --accent: #7C93F5; --accent-soft: #1E2748;
+      --good: #4FC090; --good-soft: #123024;
+      --warning: #E3AC49; --warning-soft: #34240A;
+      --critical: #E2685A; --critical-soft: #38201B;
+      --seg-main: #7C93F5; --seg-premium: #4FBEBE; --seg-low: #B98CDB;
+      --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 6px 20px rgba(0,0,0,0.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0C1220; --surface: #131A2B; --surface-alt: #1B2438; --border: #29334A;
+    --ink: #E9ECF6; --ink-2: #B0B7D1; --ink-3: #7C86A3;
+    --accent: #7C93F5; --accent-soft: #1E2748;
+    --good: #4FC090; --good-soft: #123024;
+    --warning: #E3AC49; --warning-soft: #34240A;
+    --critical: #E2685A; --critical-soft: #38201B;
+    --seg-main: #7C93F5; --seg-premium: #4FBEBE; --seg-low: #B98CDB;
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 6px 20px rgba(0,0,0,0.3);
+  }
+  :root[data-theme="light"] {
+    --bg: #F5F6F9; --surface: #FFFFFF; --surface-alt: #ECEFF5; --border: #DDE1EA;
+    --ink: #16213E; --ink-2: #47517A; --ink-3: #8890AC;
+    --accent: #3454D1; --accent-soft: #E7EBFB;
+    --good: #1E8A5F; --good-soft: #E4F5EC;
+    --warning: #B8801E; --warning-soft: #FBF1DE;
+    --critical: #C23B3B; --critical-soft: #FBE7E4;
+    --seg-main: #3454D1; --seg-premium: #1E8A8A; --seg-low: #7A4FA0;
+    --shadow: 0 1px 2px rgba(22,33,62,0.06), 0 6px 16px rgba(22,33,62,0.06);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); }
+  .dash { font-family: var(--sans); background: var(--bg); color: var(--ink); min-height: 100%; padding: 32px 20px 80px; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+  .masthead { display: flex; flex-direction: column; gap: 6px; }
+  .back-link { font-size: 12px; }
+  .back-link a { color: var(--ink-3); text-decoration: none; }
+  .back-link a:hover { color: var(--accent); text-decoration: underline; }
+  .eyebrow { font: 600 11px/1 var(--sans); letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent); }
+  h1 { font: 400 34px/1.15 var(--serif); margin: 2px 0 0; color: var(--ink); text-wrap: balance; }
+  .scope-line { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+  .scope-line b { color: var(--ink); font-weight: 600; }
+  .snapshot-tag {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    font-size: 12px; color: var(--ink-3); border: 1px solid var(--border);
+    border-radius: 999px; padding: 4px 10px 4px 8px; width: fit-content;
+  }
+  .snapshot-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); flex: none; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px;
+    cursor: pointer; text-align: left; font-family: var(--sans); width: 100%; margin: 0;
+    appearance: none; -webkit-appearance: none; color: inherit;
+  }
+  .kpi:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  .kpi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .kpi.critical { border-color: color-mix(in srgb, var(--critical) 35%, var(--border)); }
+  .kpi.active { border-color: var(--accent); background: var(--accent-soft); }
+  .kpi-label { font-size: 11px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .kpi-value { font: 400 26px/1.1 var(--serif); font-variant-numeric: tabular-nums; }
+  .kpi-value.crit { color: var(--critical); }
+  .kpi-sub { font-size: 12px; color: var(--ink-2); }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .section-title { font: 400 19px/1.2 var(--serif); margin: 0; }
+  .section-note { font-size: 12.5px; color: var(--ink-3); }
+  .hero-title { font: 400 24px/1.2 var(--serif); margin: 0; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; box-shadow: var(--shadow); }
+  .bar-row { display: grid; grid-template-columns: 190px 1fr 150px; align-items: center; gap: 14px; padding: 9px 0; cursor: default; }
+  .bar-row + .bar-row { border-top: 1px solid var(--border); }
+  @media (max-width: 640px) {
+    .bar-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+    .bar-row .bar-track { grid-column: 1 / -1; order: 3; }
+  }
+  .bar-label { font-size: 13.5px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .bar-track { position: relative; height: 10px; background: var(--surface-alt); border-radius: 6px; overflow: hidden; }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 6px; }
+  .bar-figs { text-align: right; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bar-figs b { color: var(--ink); font-size: 14px; }
+  .bar-row.clickable { cursor: pointer; }
+  .bar-row.clickable:hover .bar-label { color: var(--accent); }
+  .bar-chevron { display: inline-block; width: 9px; flex: none; color: var(--ink-3); font-size: 10px; transition: transform 0.15s ease; }
+  .bar-chevron.open { transform: rotate(90deg); }
+  .ticket-drilldown { padding: 6px 4px 16px 26px; display: flex; flex-direction: column; gap: 2px; }
+  .ticket-item { padding: 8px 0; border-top: 1px solid var(--border); font-size: 12.5px; }
+  .ticket-item:first-child { border-top: none; padding-top: 4px; }
+  .ticket-item-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ticket-item-head a { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .ticket-item-head a:hover { text-decoration: underline; }
+  .ticket-item-status { font-size: 11.5px; color: var(--ink-3); }
+  .ticket-item-subject { color: var(--ink); margin-top: 2px; }
+  .ticket-item-meta { color: var(--ink-2); font-size: 11.5px; margin-top: 2px; }
+  .ticket-item-snippet { color: var(--ink-3); font-size: 11.5px; margin-top: 3px; font-style: italic; }
+  .ticket-item.reviewed { opacity: 0.55; }
+  .ticket-item.reviewed .ticket-item-subject { text-decoration: line-through; text-decoration-color: var(--ink-3); }
+  .ticket-item-review { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+  .review-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); cursor: pointer; user-select: none; }
+  .review-toggle input { cursor: pointer; }
+  .review-note-input {
+    flex: 1; min-width: 140px; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    border-radius: 6px; padding: 4px 8px; font-size: 12px; font-family: var(--sans);
+  }
+  .recheck-toggle { color: var(--warning); font-weight: 600; }
+  .table-recheck { margin-top: 4px; }
+  .review-history { margin-top: 5px; font-size: 11.5px; color: var(--ink-3); width: 100%; }
+  .review-history summary { cursor: pointer; color: var(--ink-2); }
+  .review-history-item { padding: 3px 0; border-top: 1px solid var(--border); }
+  .review-history-item:first-child { border-top: none; }
+  .review-history-date { font-weight: 600; color: var(--ink-2); margin-right: 6px; }
+  table.data-table tbody tr.reviewed { opacity: 0.55; }
+  table.data-table tbody tr.reviewed .subject-cell { text-decoration: line-through; text-decoration-color: var(--ink-3); }
+  .table-note-input {
+    width: 100%; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    border-radius: 6px; padding: 3px 7px; font-size: 12px; font-family: var(--sans);
+  }
+  .kpi-drilldown { margin-top: -8px; }
+
+  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .pill-toggle {
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink-2);
+    border-radius: 999px; padding: 7px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    font-family: var(--sans);
+  }
+  .pill-toggle[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .search-input {
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-family: var(--sans); min-width: 220px;
+  }
+  .filter-label { font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+
+  .chip { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-decoration: none; }
+  .chip-noreply { background: color-mix(in srgb, var(--critical) 15%, transparent); color: var(--critical); }
+  .chip-awaiting { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+  .chip-backforth { background: color-mix(in srgb, var(--seg-low) 18%, transparent); color: var(--seg-low); }
+  .chip-gal { background: color-mix(in srgb, var(--seg-premium) 18%, transparent); color: var(--seg-premium); }
+  .chip-es { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+  a.chip:hover { text-decoration: underline; }
+  .chip-offhours { background: color-mix(in srgb, var(--ink-3) 20%, transparent); color: var(--ink-2); }
+
+  .empty-state { padding: 40px 20px; text-align: center; color: var(--ink-3); font-size: 13.5px; }
+  .panel-empty { font-size: 12.5px; color: var(--ink-3); padding: 8px 0; }
+
+  .suggestion-item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-top: 1px solid var(--border); }
+  .suggestion-item:first-child { border-top: none; padding-top: 2px; }
+  .suggestion-check {
+    flex: none; width: 20px; height: 20px; border: 1.5px solid var(--border); border-radius: 5px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 1px;
+    background: var(--surface); color: transparent; font-size: 13px; font-weight: 700;
+  }
+  .suggestion-check:hover { border-color: var(--accent); }
+  .suggestion-check.done { background: var(--good); border-color: var(--good); color: #fff; }
+  .suggestion-body { flex: 1; min-width: 0; }
+  .suggestion-text { font-size: 13.5px; color: var(--ink); line-height: 1.5; }
+  .suggestion-text b { font-weight: 700; }
+  .suggestion-text a { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .suggestion-text a:hover { text-decoration: underline; }
+  .suggestion-meta { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+  .suggestion-restore {
+    flex: none; font-size: 11.5px; font-weight: 600; color: var(--accent); background: none; border: none;
+    cursor: pointer; font-family: var(--sans); padding: 2px 0; margin-top: 2px;
+  }
+  .suggestion-restore:hover { text-decoration: underline; }
+
+  .trend-legend { display: flex; gap: 16px; margin-bottom: 10px; font-size: 12.5px; color: var(--ink-2); flex-wrap: wrap; }
+  .trend-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .trend-legend .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .trend-svg-wrap { width: 100%; overflow-x: auto; }
+  .trend-svg { width: 100%; min-width: 640px; height: auto; display: block; }
+  .trend-axis-label { font: 500 10.5px var(--sans); fill: var(--ink-3); }
+  .trend-gridline { stroke: var(--border); stroke-width: 1; }
+
+  .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .breakdown-grid { grid-template-columns: 1fr; } }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data-table thead th {
+    position: sticky; top: 0; background: var(--surface); text-align: left; font-size: 11px;
+    letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-3); font-weight: 700;
+    padding: 8px 10px; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap;
+  }
+  table.data-table thead th:not([data-key]) { cursor: default; }
+  table.data-table thead th .arrow { opacity: 0.25; margin-left: 4px; }
+  table.data-table thead th.sorted .arrow { opacity: 1; color: var(--accent); }
+  table.data-table tbody td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.data-table tbody tr:hover { background: var(--surface-alt); }
+  table.data-table a { color: var(--accent); font-weight: 700; text-decoration: none; }
+  table.data-table a:hover { text-decoration: underline; }
+  .table-wrap { overflow-x: auto; }
+  .subject-cell { max-width: 320px; }
+  .flags-cell { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; font-size: 12.5px; color: var(--ink-2); }
+  .pager button { border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-family: var(--sans); }
+  .pager button:disabled { opacity: 0.4; cursor: default; }
+
+  .agent-toolbar { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .copy-btn { border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); border-radius: 6px; padding: 5px 11px; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: var(--sans); }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--good); color: var(--good); }
+  dialog.week-report { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+    padding: 20px 22px; width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; }
+  dialog.week-report::backdrop { background: rgba(12,18,32,0.55); }
+  .wr-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .wr-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  .wr-table th, .wr-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: right; }
+  .wr-table th:first-child, .wr-table td:first-child { text-align: left; }
+  .wr-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 600; }
+  .wr-table tr.wr-group td { color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; padding-top: 14px; }
+  .wr-better { color: var(--good); } .wr-worse { color: var(--critical); } .wr-same { color: var(--ink-3); }
+  .wr-foot { margin-top: 12px; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+  dialog.stats-dlg { width: min(900px, calc(100vw - 32px)); }
+  .stats-select { border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-family: var(--sans); }
+  .st-sub { margin: 18px 0 0; font: 400 14px/1.2 var(--serif); color: var(--ink); }
+  .st-trends { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 10px; }
+  .st-trend { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: var(--surface-alt); }
+  .st-trend .st-t-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 600; }
+  .st-trend .st-t-val { font: 400 18px/1.3 var(--serif); color: var(--ink); }
+  .st-trend svg { width: 100%; height: 44px; display: block; }
+  .st-trend .st-line { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+  .st-trend .st-dot { fill: var(--accent); }
+  .st-trend .st-dot-sel { fill: var(--critical); }
+  .stats-dlg td.st-muted { color: var(--ink-3); }
+
+  .checkin-status { font-size: 11.5px; margin-top: 6px; }
+  .checkin-status-done { color: var(--good); font-weight: 600; }
+
+  details.panel summary { cursor: pointer; font: 400 15px/1.2 var(--serif); list-style: none; display: flex; align-items: center; justify-content: space-between; }
+  details.panel summary::-webkit-details-marker { display: none; }
+  details.panel summary::after { content: "+"; font-family: var(--sans); font-size: 18px; color: var(--ink-3); }
+  details.panel[open] summary::after { content: "\2212"; }
+  .method-body { margin-top: 14px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+  @media (max-width: 760px) { .method-body { grid-template-columns: 1fr; } }
+  .method-body h4 { font: 700 12px var(--sans); letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 6px; }
+  .method-body ul { margin: 0; padding-left: 18px; }
+  .method-body li { margin-bottom: 5px; }
+  .method-body code { background: var(--surface-alt); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  .method-full { grid-column: 1 / -1; }
+  .method-lede { margin: 0; }
+
+  footer.foot { text-align: center; font-size: 11.5px; color: var(--ink-3); padding-top: 4px; }
+
+  @media (prefers-reduced-motion: no-preference) { .bar-fill { transition: width 0.5s ease; } }
+
+  /* ---- hosted board: top bar, sign-in, who's viewing ---- */
+  .topbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+  .viewers { display: inline-flex; align-items: center; gap: 4px; }
+  .viewer-dot { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    font: 700 11px var(--sans); background: var(--accent-soft); color: var(--accent); border: 1px solid var(--border); }
+  .viewer-dot.me { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .top-btn { border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 5px 12px;
+    font: 600 12px var(--sans); cursor: pointer; }
+  .top-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .snapshot-dot.live { background: var(--good); }
+  .snapshot-dot.stale { background: var(--critical); }
+  .signin { max-width: 440px; margin: 12vh auto 0; text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+  .signin p { color: var(--ink-2); font-size: 14px; line-height: 1.5; margin: 0; }
+  .signin .msg { color: var(--critical); font-size: 13px; }
+  .primary-btn { border: none; background: var(--accent); color: #fff; border-radius: 8px; padding: 11px 20px; font: 600 14px var(--sans); cursor: pointer; }
+  .primary-btn:hover { filter: brightness(1.08); }
+  [hidden] { display: none !important; }
+
+  /* ---- live queue ---- */
+  .queue-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; }
+  @media (max-width: 900px) { .queue-grid { grid-template-columns: 1fr; } }
+  .q-status { display: inline-flex; align-items: center; gap: 6px; font: 700 11px var(--sans); letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px; }
+  .q-open { background: var(--good-soft); color: var(--good); }
+  .q-closed { background: var(--surface-alt); color: var(--ink-3); }
+  .q-warn { background: var(--warning-soft); color: var(--warning); }
+  .q-crit { background: var(--critical-soft); color: var(--critical); }
+  .q-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+  @media (max-width: 640px) { .q-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .q-tile { background: var(--surface-alt); border-radius: 8px; padding: 10px 12px; }
+  .q-tile .kpi-value { font-size: 22px; }
+  button.q-tile { border: 1px solid transparent; text-align: left; font-family: var(--sans); color: inherit; cursor: pointer; width: 100%; }
+  button.q-tile:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  button.q-tile.active { border-color: var(--accent); background: var(--accent-soft); }
+  .call-drill { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
+  .call-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .call-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-3); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  .call-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .call-table a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .q-tile.flash { animation: flash 1s steps(2, start) infinite; background: var(--critical-soft); }
+  .q-tile.flash .kpi-value { color: var(--critical); }
+  @keyframes flash { to { background: var(--surface-alt); } }
+  @media (prefers-reduced-motion: reduce) { .q-tile.flash { animation: none; } }
+  .agent-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13px; }
+  .agent-row:first-child { border-top: none; }
+  .agent-name { font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .agent-time { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .st { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .st-green { background: var(--good-soft); color: var(--good); }
+  .st-red { background: var(--critical-soft); color: var(--critical); }
+  .st-yellow { background: var(--warning-soft); color: var(--warning); }
+  .st-grey { background: var(--surface-alt); color: var(--ink-3); }
+  .spark { width: 100%; height: 70px; display: block; margin-top: 12px; }
+  .spark-legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--ink-3); margin-top: 4px; flex-wrap: wrap; }
+  .spark-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .spark-legend i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+  .calls-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .mini-list { margin-top: 12px; font-size: 12.5px; }
+  .mini-list .row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); }
+  .mini-list .row:first-child { border-top: none; }
+  .mini-list .muted { color: var(--ink-3); }
+  .mini-list a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .mini-list a:hover { text-decoration: underline; }
+  .review-by { font-size: 11px; color: var(--ink-3); }
+  .chip-pending { background: var(--surface-alt); color: var(--ink-3); }
+  .chip-int { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  .chip-setup { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+  .chip-galdone { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+  .chip-group { background: var(--surface-alt); color: var(--ink-2); }
+  .esc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .esc-tiles .q-tile { cursor: default; }
+  .risk-sig { display: inline-block; margin: 2px 4px 2px 0; }
+  #riskTiles button.q-tile { cursor: pointer; }
+  .risk-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 14px; margin-top: 8px; font-size: 12.5px; }
+  @media (max-width: 640px) { .risk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+
+<div class="dash">
+  <div class="wrap">
+
+    <div class="topbar" id="topbar" hidden>
+      <span class="viewers" id="viewers"></span>
+      <span id="viewerName"></span>
+      <button type="button" class="top-btn" id="weekReportBtn" title="Last two complete weeks, Sunday to Saturday">Last week</button>
+      <button type="button" class="top-btn" id="statsBtn" title="Weekly integration support stats, Sunday to Saturday, with the week before and a trend">Stats</button>
+      <button type="button" class="top-btn" id="arrangeBtn" title="Move sections around; your order is saved for you on every device">Arrange</button>
+      <button type="button" class="top-btn" id="resetLayoutBtn" hidden>Reset layout</button>
+      <button type="button" class="top-btn" id="themeBtn">Theme</button>
+      <button type="button" class="top-btn" id="signOutBtn">Sign out</button>
+    </div>
+
+    <dialog class="week-report" id="weekReport">
+      <div class="wr-head">
+        <h2 class="section-title" id="weekReportTitle">Last week</h2>
+        <span style="display:flex; gap:8px;">
+          <button type="button" class="copy-btn" id="weekReportCopy">Copy report</button>
+          <button type="button" class="copy-btn" id="weekReportClose">Close</button>
+        </span>
+      </div>
+      <div id="weekReportBody"><div class="wr-foot">Loading&hellip;</div></div>
+    </dialog>
+
+    <dialog class="week-report stats-dlg" id="statsDlg">
+      <div class="wr-head">
+        <h2 class="section-title" id="statsTitle">Weekly stats</h2>
+        <span style="display:flex; gap:8px; align-items:center;">
+          <select id="statsWeek" class="stats-select" aria-label="Week"></select>
+          <button type="button" class="copy-btn" id="statsCopy">Copy stats</button>
+          <button type="button" class="copy-btn" id="statsClose">Close</button>
+        </span>
+      </div>
+      <div id="statsBody"><div class="wr-foot">Loading&hellip;</div></div>
+    </dialog>
+
+    <div class="signin" id="signin" hidden>
+      <div class="eyebrow">Support Operations &middot; Integrations</div>
+      <h1>Integrations Watch</h1>
+      <p>Open QuickBooks Desktop, QuickBooks Online and other integration tickets that may need attention, setup requests, Dev (GAL) work and integration escalations.</p>
+      <button type="button" class="primary-btn" id="signInBtn">Sign in with RingCentral</button>
+      <div class="msg" id="signinMsg"></div>
+    </div>
+
+    <div id="board" hidden style="display:flex; flex-direction:column; gap:28px;">
+    <div class="masthead">
+      <div class="eyebrow">Support Operations &middot; Integrations</div>
+      <h1>Integrations Watch</h1>
+      <div class="scope-line">
+        <b id="scopeOpen">&hellip;</b> open integration tickets (not yet Solved) &middot; <b id="scopeQb">&hellip;</b> QuickBooks &middot;
+        <b id="scopeFlagged">&hellip;</b> flagged as possibly dropped &middot; <b id="scopeGal">&hellip;</b> with Dev (GAL)
+      </div>
+      <div class="snapshot-tag"><span class="snapshot-dot" id="liveDot"></span><span id="genDate">Loading&hellip;</span></div>
+    </div>
+
+    <div data-section="focus" data-section-label="Where to Focus">
+    <details class="panel" id="suggestionsDetails">
+      <summary>
+        <span class="section-title">Where to Focus</span>
+        <span class="section-note" id="suggestionsCount" style="font-family:var(--sans); font-weight:400;"></span>
+      </summary>
+      <div style="margin-top:14px;">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+          <button class="pill-toggle" id="suggestionsViewToggle" aria-pressed="false">Show completed</button>
+        </div>
+        <div id="suggestionsPanel"></div>
+      </div>
+    </details>
+    </div>
+
+    <div data-section="kpis" data-section-label="Ticket KPI tiles" style="display:flex; flex-direction:column; gap:28px;">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div id="kpiDrilldownWrap"></div>
+    </div>
+
+    <div data-section="integrationSection" id="integrationSection">
+      <div class="section-head">
+        <h2 class="hero-title">Open tickets, by integration</h2>
+        <span class="section-note" id="integrationNote"></span>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <div class="esc-tiles" id="integrationTiles"></div>
+        <div style="margin-top:16px;" id="integrationChart"></div>
+      </div>
+    </div>
+
+    <div data-section="setupSection" id="setupSection">
+      <div class="section-head">
+        <h2 class="hero-title">Setup &amp; integration requests</h2>
+        <span class="section-note" id="setupNote"></span>
+      </div>
+      <div class="panel" style="margin-top:12px;" id="setupList"></div>
+      <div id="setupSnoozed"></div>
+    </div>
+
+    <div data-section="galDoneSection" id="galDoneSection">
+      <div class="section-head">
+        <h2 class="section-title">Dev work closed, ticket still open</h2>
+        <span class="section-note" id="galDoneNote"></span>
+      </div>
+      <div class="panel" style="margin-top:12px;" id="galDoneList"></div>
+    </div>
+
+    <div data-section="tierSection" id="tierSection">
+      <div class="section-head">
+        <h2 class="hero-title">Flagged tickets, by urgency</h2>
+        <span class="section-note">Needs attention now (&le;48h since last activity) &middot; Aging (2&ndash;7 days) &middot; Long-stale backlog (7+ days) &middot; excludes tickets with Dev (GAL)</span>
+      </div>
+      <div class="panel" style="margin-top:12px;" id="tierChart"></div>
+    </div>
+
+    <div data-section="assigneeSection" id="assigneeSection">
+      <div class="section-head">
+        <h2 class="section-title">Flagged tickets, by assignee</h2>
+        <span class="section-note">Excludes tickets with Dev (GAL) &middot; click an agent to expand their list &middot; use Copy list to export a plain-text list for that agent</span>
+      </div>
+      <div class="panel" style="margin-top:12px;" id="assigneeChart"></div>
+    </div>
+
+    <div data-section="backforthAssigneeSection" id="backforthAssigneeSection">
+      <div class="section-head">
+        <h2 class="section-title">Heavy back-and-forth, by assignee</h2>
+        <span class="section-note">Not urgent by itself: long threads worth a look whoever's turn it is to reply &middot; excludes tickets with Dev (GAL)</span>
+      </div>
+      <div class="panel" style="margin-top:12px;" id="backforthAssigneeChart"></div>
+      <div id="backforthSnoozed"></div>
+    </div>
+
+    <div data-section="esSection" id="esSection">
+      <div class="section-head">
+        <h2 class="section-title">ES Escalations (integrations)</h2>
+        <span class="section-note" id="esNote"></span>
+      </div>
+      <div class="panel" style="margin-top:12px;" id="esList"></div>
+    </div>
+
+    <div data-section="galSection" id="galSection">
+      <div class="section-head">
+        <h2 class="section-title">With Dev (GAL)</h2>
+        <span class="section-note" id="galNote"></span>
+      </div>
+      <div class="panel" style="margin-top:12px;" id="galList"></div>
+    </div>
+
+    <div data-section="tableSection" id="tableSection" data-section-label="Other open tickets">
+    <details class="panel" id="tableDetails">
+      <summary>
+        <span class="section-title">Other open tickets (no flags)</span>
+        <span class="section-note" id="tableCount" style="font-family:var(--sans); font-weight:400;"></span>
+      </summary>
+      <div style="margin-top:14px;">
+        <p class="section-note" style="margin:0 0 12px;">Tickets not shown in any section above: not flagged, not heavy back-and-forth. Mostly pending on the customer. Switch to All open for the full reference list. Excludes tickets with Dev (GAL).</p>
+        <div class="filters" style="margin-bottom:14px;">
+          <span class="filter-label">Show:</span>
+          <button class="pill-toggle" data-table-filter="other" aria-pressed="true">No flags</button>
+          <button class="pill-toggle" data-table-filter="all" aria-pressed="false">All open</button>
+          <input type="text" class="search-input" id="tableSearch" placeholder="Search subject or requester&hellip;">
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="ticketTable">
+            <thead>
+              <tr>
+                <th data-key="id">Ticket<span class="arrow">&#9662;</span></th>
+                <th data-key="integration">Integration<span class="arrow">&#9662;</span></th>
+                <th data-key="subject">Subject<span class="arrow">&#9662;</span></th>
+                <th data-key="requester">Requester / Org<span class="arrow">&#9662;</span></th>
+                <th data-key="assignee">Assignee<span class="arrow">&#9662;</span></th>
+                <th data-key="status">Status<span class="arrow">&#9662;</span></th>
+                <th data-key="hours">Hours since activity<span class="arrow">&#9662;</span></th>
+                <th data-key="comments">Comments<span class="arrow">&#9662;</span></th>
+                <th data-key="flags">Flags<span class="arrow">&#9662;</span></th>
+                <th data-key="reviewed">Reviewed<span class="arrow">&#9662;</span></th>
+                <th>Notes</th>
+                <th>Internal note</th>
+              </tr>
+            </thead>
+            <tbody id="ticketTableBody"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="ticketPager"></div>
+      </div>
+    </details>
+    </div>
+
+    <div data-section="trendSection" id="trendSection">
+      <div class="section-head">
+        <h2 class="section-title">Open &amp; flagged counts over time</h2>
+        <span class="section-note" id="trendNote">One point per hour on weekdays</span>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <div class="trend-legend" id="trendLegend"></div>
+        <div class="trend-svg-wrap" id="trendChart"></div>
+      </div>
+    </div>
+
+    <div data-section="breakdowns" data-section-label="By status, status detail, flag reason and group">
+    <div class="breakdown-grid">
+      <div>
+        <div class="section-head"><h2 class="section-title">By status</h2><span class="section-note">Excludes tickets with Dev (GAL)</span></div>
+        <div class="panel" id="statusChart" style="margin-top:12px;"></div>
+      </div>
+      <div>
+        <div class="section-head"><h2 class="section-title">By flag reason</h2><span class="section-note">Excludes tickets with Dev (GAL)</span></div>
+        <div class="panel" id="reasonChart" style="margin-top:12px;"></div>
+      </div>
+      <div>
+        <div class="section-head"><h2 class="section-title">By Ticket Status Detail</h2><span class="section-note">Every open ticket</span></div>
+        <div class="panel" id="detailChart" style="margin-top:12px;"></div>
+      </div>
+      <div>
+        <div class="section-head"><h2 class="section-title">By group</h2><span class="section-note">Every open ticket</span></div>
+        <div class="panel" id="groupChart" style="margin-top:12px;"></div>
+      </div>
+    </div>
+    </div>
+
+    <div data-section="methodology" data-section-label="Methodology and scope notes">
+    <details class="panel">
+      <summary>Methodology &amp; scope notes</summary>
+      <div class="method-body">
+        <div class="method-full">
+          <h4>Data source</h4>
+          <p class="method-lede">
+            Every unsolved ticket (New, Open, Pending or On Hold) that is in the Zendesk Integrations Team group, has CORE-Module
+            Integrations, has the CORE-Integrations-Area field set (QBD, QBO, Xero, Office 365, MYOB, DocuSign and so on), or names
+            QuickBooks, QBO, QBD, QBWC, Intuit, Xero or MYOB in its subject. The subject match catches QuickBooks tickets filed under
+            another module or not categorized yet, since agents often set the area field only when they solve. Tickets come from the
+            support team's shared Zendesk store, which reads Zendesk's change feed every few minutes. This page doesn't pull anything
+            itself: it reads that store and the shared Jira store. Flags and hours are worked out in your browser, so they stay current
+            between refreshes.
+          </p>
+        </div>
+        <div>
+          <h4>Integration</h4>
+          <ul>
+            <li>The CORE-Integrations-Area value when it is set. Otherwise the subject decides: QBO, "QuickBooks Online" or Intuit is QuickBooks Online; QBD, "QuickBooks Desktop", QBWC or "Web Connector" is QuickBooks Desktop; plain "QuickBooks" or "QB" is QuickBooks (version not set).</li>
+            <li>"Other / not set" is a ticket in the Integrations Team group or module with no area and no integration named in the subject.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Setup vs troubleshooting</h4>
+          <ul>
+            <li>Same rule as the QBD/QBO integration report. A QBD or QBO Troubleshooting SubArea makes it troubleshooting. A setup or integration-request SubArea (consulting request, introduction questions, QuickBooks Desktop setup request) makes it a setup request.</li>
+            <li>With no SubArea, the subject decides: setup, set up, config, connect, onboard, install, activate, initial sync, new integration, integrate, implementation, mapping and similar words make it a setup request. Everything else is troubleshooting.</li>
+            <li>The keyword rule is a best guess, so a troubleshooting ticket that says "connect" in its subject lands in setup. Use the note to record anything misfiled.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>With Dev (GAL)</h4>
+          <ul>
+            <li>A <code>GAL-#####</code> in the subject or in the ticket's GAL field puts a ticket in With Dev; it's left out of every flagged view, since it waits on Development. GAL chips show the issue's Support Ranking, and "Missing SR" when it has none.</li>
+            <li>Dev work closed, ticket still open: the GAL issue is Done in Jira while the Zendesk ticket is still open. These usually need a follow-up with the customer, or the ticket can be solved.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>ES Escalations (integrations)</h4>
+          <ul>
+            <li>Open Jira ES issues with an integration component: QuickBooks Data Integration, Quick Books Record Mapping, QB Desktop Utility, QBD Core Conversion Utility, Xero Data Integration, MYOB Data Integration, Integration, DocuSign Integration or Office365 Email Sync. They are linked to Zendesk through the ES Number field. Reviews there last for the day.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Flag definitions</h4>
+          <ul>
+            <li><b>No agent reply yet</b>: open 4+ hours with zero public comment from anyone other than the requester.</li>
+            <li><b>Awaiting our reply</b>: the requester's comment is the most recent public comment, 4+ hours ago.</li>
+            <li><b>Heavy back-and-forth</b>: 10+ public comments. Shown for a look, not urgent by itself.</li>
+            <li><b>Recently checked in</b>: the newest comment is an internal note from the last 24 hours. The ticket leaves the flagged views until something newer happens.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Urgency tiers</h4>
+          <ul>
+            <li><b>Needs attention now</b>: flagged, last activity within 48 hours.</li>
+            <li><b>Aging</b>: flagged, last activity 2&ndash;7 days ago.</li>
+            <li><b>Long-stale backlog</b>: flagged, last activity 7+ days ago.</li>
+            <li>Hours are calendar time, not business hours.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Reviewed checkbox &amp; notes</h4>
+          <ul>
+            <li>Shared by everyone who can open this board, with who changed them last. They stay on this board; nothing is written to Zendesk or Jira.</li>
+            <li>GAL, setup request and heavy back-and-forth reviews last 7 days; ES reviews last the day; other reviews last until someone rechecks them.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Refresh</h4>
+          <ul>
+            <li>The page refreshes itself every 15 minutes while it's open and on screen, and right away when you come back to it after that. Ticket changes show up within a few minutes.</li>
+            <li>The trend chart gets one point per hour on weekdays, starting 11/25/2026.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+    </div>
+
+    <footer class="foot">BQE Software &middot; Internal &middot; Integrations Watch 1.0</footer>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ROWS columns: see RC below. Built in the browser from the integrations-watch function's raw ticket fields
+  // (see buildRows), and rebuilt on every refresh so hours stay current.
+  var ROWS = [];
+  // HISTORY columns: [timestampMs, openCount, flaggedCount, needsAttnCount, agingCount, staleCount, qbd, qbo, setup, gal]
+  var HISTORY = [];
+  // ES_ROWS columns: [key, summary, status, priority, daysOpen(number|null), overdue(0/1),
+  //                   assigneeName, tier, company, url, linkedTicketId(number|null),
+  //                   linkedTicketSubject(string|null), linkedTicketStatus(string|null)]
+  // Open Jira ES issues with an integration component, from the shared Jira store, linked to Zendesk through "ES Number".
+  var ES_ROWS = [];
+  var GENERATED_AT = "";
+  var DATA = null;            // last integrations-watch response
+  var REVIEWS = {};           // shared Reviewed/notes, keyed by ticket id or "jira:ES-#####"
+  var VIEWER = null;
+  var BOARD = "integrations-watch";
+
+  // ---- building rows from the shared stores ----
+  var NOW = Date.now();
+  var NO_REPLY_HOURS = 4, AWAITING_HOURS = 4, BACKFORTH_COMMENTS = 10, CHECKIN_HOURS = 24;
+  var IW_GROUP = "Integrations Team";
+  // iw_board() tickets: [0 id, 1 subject, 2 status, 3 requester, 4 org, 5 assignee, 6 created, 7 lastPublicAt,
+  //   8 lastPublicByRequester, 9 publicComments, 10 agentPublicComments, 11 lastPublicSnippet, 12 lastCommentAt,
+  //   13 lastCommentPublic, 14 internalSnippet, 15 ticketType, 16 requesterEmail, 17 commentsKnown, 18 groupName,
+  //   19 inIntegrationsGroup, 20 statusDetail, 21 module, 22 integration, 23 kind (setup|trouble), 24 galField,
+  //   25 product, 26 esNumberField]
+  function buildRows(tickets) {
+    return tickets.map(function (t) {
+      var created = Date.parse(t[6]), lastPub = t[7] ? Date.parse(t[7]) : null, known = !!t[17];
+      var hours = (NOW - (lastPub || created)) / 3600000, hoursCreated = (NOW - created) / 3600000;
+      var noReply = known && (t[10] || 0) === 0 && hoursCreated >= NO_REPLY_HOURS;
+      var awaiting = known && !!t[8] && lastPub !== null && hours >= AWAITING_HOURS;
+      var backforth = (t[9] || 0) >= BACKFORTH_COMMENTS;
+      // GAL and ES references from the subject and from the ticket's GAL / ES Number fields, in that order, deduped.
+      var refs = [], seen = {}, text = [t[1] || "", t[24] || "", t[26] || ""].join(" ");
+      text.replace(/GAL-\d+/g, function (m) { if (!seen[m]) { seen[m] = 1; refs.push(m); } return m; });
+      text.replace(/ES-\d+/g, function (m) { if (!seen[m]) { seen[m] = 1; refs.push(m); } return m; });
+      var gal = (text.match(/GAL-\d+/) || [null])[0];
+      var checkedIn = t[13] === false && t[12] && NOW - Date.parse(t[12]) < CHECKIN_HOURS * 3600000;
+      return [t[0], t[1], t[2], t[3] || "", t[4] || "", t[5] || "Unassigned", hours, hoursCreated,
+        t[9] || 0, t[8] ? "requester" : "agent", noReply, awaiting, backforth, noReply || awaiting, t[11] || "",
+        "https://bqe.zendesk.com/agent/tickets/" + t[0], gal, t[22] || "other", t[15], t[23] === "setup", t[18] || "", !!t[19],
+        !!checkedIn, checkedIn ? (t[14] || "") : "", refs.join(","), known, t[20] || "", t[25] || ""];
+    });
+  }
+  // iw_board() es: [key, summary, status, priority, created, nextUpdateDue, assignee, company, updated, components]
+  function buildEsRows(es, links, rows) {
+    var fromSubjects = {};
+    rows.forEach(function (r) {
+      jiraRefsOf(r).forEach(function (ref) { if (ref.indexOf("ES-") === 0 && !fromSubjects[ref]) fromSubjects[ref] = [r[RC.id], r[RC.subject], r[RC.status]]; });
+    });
+    return es.map(function (e) {
+      var link = (links && links[e[0]]) || fromSubjects[e[0]] || null;
+      return [e[0], e[1], e[2], e[3], e[4] ? (NOW - Date.parse(e[4])) / 86400000 : null, e[5] && Date.parse(e[5]) < NOW ? 1 : 0,
+        e[6] || "Unassigned", e[9] || "", e[7] || "", "https://bqetrack.atlassian.net/browse/" + e[0],
+        link ? link[0] : null, link ? link[1] : null, link ? link[2] : null];
+    });
+  }
+
+  var RC = {
+    id: 0, subject: 1, status: 2, requester: 3, org: 4, assignee: 5,
+    hours: 6, hoursCreated: 7, comments: 8, lastFrom: 9,
+    flagNoReply: 10, flagAwaiting: 11, flagBackforth: 12, needsAttention: 13, snippet: 14, url: 15, gal: 16,
+    integration: 17, ticketType: 18, setup: 19, group: 20, inGroup: 21, checkedInRecently: 22, checkinNote: 23,
+    jiraRefs: 24, commentsKnown: 25, statusDetail: 26, product: 27
+  };
+  var ES_RC = {
+    key: 0, summary: 1, status: 2, priority: 3, daysOpen: 4, overdue: 5, assignee: 6, tier: 7,
+    company: 8, url: 9, linkedTicketId: 10, linkedTicketSubject: 11, linkedTicketStatus: 12
+  };
+  // Integrations: label, colour and display order. Keys are the CORE-Integrations-Area values without their prefix.
+  var INT_LABEL = { qbd: "QuickBooks Desktop", qbo: "QuickBooks Online", quickbooks: "QuickBooks (version not set)", xero: "Xero",
+    office_365: "Office 365", myob: "MYOB", myob_accountright: "MYOB AccountRight", docusign: "DocuSign", documents: "Documents",
+    zapier: "Zapier", ms_power_bl: "Power BI", other: "Other / not set" };
+  var INT_SHORT = { qbd: "QBD", qbo: "QBO", quickbooks: "QuickBooks", office_365: "Office 365", myob_accountright: "MYOB AR", ms_power_bl: "Power BI", other: "Area not set" };
+  var INT_ORDER = ["qbd", "qbo", "quickbooks", "xero", "office_365", "myob", "myob_accountright", "docusign", "documents", "zapier", "ms_power_bl", "other"];
+  var INT_VAR = { qbd: "--accent", qbo: "--seg-premium", quickbooks: "--seg-low", xero: "--good", office_365: "--warning" };
+  function intLabel(k) { return INT_LABEL[k] || String(k || "").replace(/_/g, " "); }
+  function intShort(k) { return INT_SHORT[k] || intLabel(k); }
+  function intRank(k) { var i = INT_ORDER.indexOf(k); return i < 0 ? 99 : i; }
+  function isQb(r) { return r[RC.integration] === "qbd" || r[RC.integration] === "qbo" || r[RC.integration] === "quickbooks"; }
+  // A GAL issue that is Done in Jira while the ticket is still open: [ref, gal info] pairs.
+  function galDoneRefs(r) {
+    return jiraRefsOf(r).filter(function (ref) { var g = ref.indexOf("GAL-") === 0 && DATA && DATA.gal ? DATA.gal[ref] : null; return g && g[3] === "Done"; });
+  }
+  // "open__researching_issue_" -> "Open: Researching issue" (Ticket Status Detail values)
+  function detailLabel(v) {
+    if (!v) return "(none)";
+    return String(v).split("__").map(function (p) {
+      var s = p.replace(/_/g, " ").trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+    }).filter(function (s) { return s; }).join(": ");
+  }
+
+  var STATUS_LABEL = { "new": "New", "open": "Open", "pending": "Pending", "hold": "On Hold" };
+  var STATUS_VAR = { "new": "--ink-3", "open": "--accent", "pending": "--warning", "hold": "--seg-low" };
+
+  function fmtNum(n) { if (n === null || n === undefined || isNaN(n)) return "—"; return Math.round(n).toLocaleString(); }
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  // Zendesk comment snippets can carry HTML entities ("&nbsp;", "&amp;"); show them as text.
+  var entityEl = document.createElement("textarea");
+  function plainText(s) { entityEl.innerHTML = String(s || ""); return entityEl.value.replace(/\s+/g, " ").trim(); }   // \s includes the non-breaking space
+  function fmtHours(h) {
+    if (h < 48) return Math.round(h) + "h";
+    return Math.round(h / 24) + "d";
+  }
+  function whoLabel(r) {
+    var who = r[RC.requester] || "";
+    var org = r[RC.org] || "";
+    if (who && org) return who + " / " + org;
+    return who || org || "";
+  }
+  var JIRA_BROWSE_URL = "https://bqetrack.atlassian.net/browse/";
+  // Every GAL-##### (Engineering) and ES-##### (Escalations) reference found in the ticket
+  // subject, in order, deduped - a subject can carry more than one (e.g. "GAL-117822 | ES-21457
+  // | ES-22180 | ..."). Just a static browse link, no Jira API call needed - same pattern the
+  // At-Risk dashboard already uses (see at-risk-dashboard-README.md).
+  function jiraRefsOf(r) {
+    var raw = r[RC.jiraRefs];
+    if (!raw) return [];
+    return raw.split(",").filter(function (s) { return s; });
+  }
+  function flagsOf(r) {
+    var f = [];
+    if (r[RC.flagNoReply]) f.push({ key: "noreply", label: "No agent reply", cls: "chip-noreply" });
+    if (r[RC.flagAwaiting]) f.push({ key: "awaiting", label: "Awaiting our reply", cls: "chip-awaiting" });
+    if (r[RC.flagBackforth]) f.push({ key: "backforth", label: r[RC.comments] + " comments", cls: "chip-backforth" });
+    f.push({ key: "int", label: intShort(r[RC.integration]), cls: "chip-int" });
+    if (r[RC.setup]) f.push({ key: "setup", label: "Setup request", cls: "chip-setup" });
+    if (/billquick/i.test(r[RC.product])) f.push({ key: "bq", label: "BillQuick", cls: "chip-group" });
+    jiraRefsOf(r).forEach(function (ref) {
+      // GAL chips carry the issue's Support Ranking; a GAL without one gets a red "Missing SR" chip.
+      var g = ref.indexOf("GAL-") === 0 && DATA && DATA.gal ? DATA.gal[ref] : null, sr = g && g[0] !== null && g[0] !== undefined && g[0] !== "" ? g[0] : null;
+      f.push({ key: "jira:" + ref, label: ref + (sr !== null ? " · SR " + sr : ""), cls: ref.indexOf("ES-") === 0 ? "chip-es" : "chip-gal", href: JIRA_BROWSE_URL + ref });
+      if (g && g[2] && sr === null && g[3] !== "Done") f.push({ key: "nosr:" + ref, label: "Missing SR", cls: "chip-noreply", href: JIRA_BROWSE_URL + ref });
+      if (g && g[3] === "Done") f.push({ key: "galdone:" + ref, label: "Dev closed" + (g[4] ? " " + fmtShortDate(g[4]) : ""), cls: "chip-galdone", href: JIRA_BROWSE_URL + ref });
+    });
+    if (!r[RC.inGroup] && r[RC.group]) f.push({ key: "group", label: "In " + r[RC.group], cls: "chip-group" });
+    if (!r[RC.commentsKnown]) f.push({ key: "pending", label: "Comments not read yet", cls: "chip-pending" });
+    return f;
+  }
+  function chipsHtml(r) {
+    return flagsOf(r).map(function (f) {
+      return f.href
+        ? '<a class="chip ' + f.cls + '" href="' + f.href + '" target="_blank" rel="noopener">' + escapeHtml(f.label) + '</a>'
+        : '<span class="chip ' + f.cls + '">' + f.label + '</span>';
+    }).join(" ");
+  }
+  function fmtShortDate(s) { var d = new Date(s); return (d.getMonth() + 1) + "/" + d.getDate(); }
+  function ticketLink(r) { return '<a href="' + r[RC.url] + '" target="_blank" rel="noopener">#' + r[RC.id] + '</a>'; }
+
+  // GAL (with Dev) tickets get their own section and are left out of every other breakdown below - urgency tiers,
+  // by-assignee, by-status, by-reason, Where to Focus, and the main table all work off workingRows/flagged. They wait on
+  // Development, so being on the list isn't a dropped ball on our side.
+  // A ticket checked in recently (internal note, nothing newer) stays a real open ticket but drops out of every
+  // flagged/needs-attention view until something new happens on it.
+  var workingRows = [], flagged = [];
+  function derive() {
+    workingRows = ROWS.filter(function (r) { return !r[RC.gal]; });
+    flagged = workingRows.filter(function (r) { return r[RC.needsAttention] && !r[RC.checkedInRecently]; });
+    document.getElementById("scopeOpen").textContent = ROWS.length.toLocaleString();
+    document.getElementById("scopeFlagged").textContent = flagged.length.toLocaleString();
+    document.getElementById("scopeQb").textContent = ROWS.filter(isQb).length.toLocaleString();
+    document.getElementById("scopeGal").textContent = ROWS.filter(function (r) { return r[RC.gal]; }).length.toLocaleString();
+  }
+
+  // ---- Per-ticket review state (checkbox + note), SHARED: saved through the integrations-watch function
+  // (table iw_reviews), so everyone with access sees the same marks, with who changed them last.
+  // history: [{ note, by, at }, ...] - past review passes, oldest first, added only by a recheck.
+  // How long a "Reviewed" lasts depends on the item (2026-10-21); notes can be added at any time:
+  //   GAL (with Dev), setup requests and heavy back-and-forth tickets: 7 days, then they come back on their own
+  //   ES escalations: the day it was ticked (Pacific), so open ones come back every morning
+  //   everything else: until someone rechecks it (the earlier rule)
+  var REVIEW_WEEK_MS = 7 * 86400000;
+  var REVIEW_RULE = {};   // id -> "week" | "day", rebuilt in apply()
+  var ptDateFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" });
+  function getReview(id) {
+    var r = REVIEWS[id];
+    if (!r) return { reviewed: false, note: "", history: [] };
+    var out = { reviewed: !!r.reviewed, note: r.note || "", updatedAt: r.at ? Date.parse(r.at) : null, by: r.by || "",
+      reviewedAt: r.rat ? Date.parse(r.rat) : (r.reviewed && r.at ? Date.parse(r.at) : null), rule: REVIEW_RULE[id] || "",
+      history: (r.history || []).map(function (h) { return { note: h.note, by: h.by, updatedAt: Date.parse(h.at) }; }) };
+    if (out.reviewed && out.rule && out.reviewedAt) {
+      if (out.rule === "week") out.backOn = out.reviewedAt + REVIEW_WEEK_MS;
+      var lapsed = out.rule === "week" ? Date.now() >= out.backOn : ptDateFmt.format(new Date(out.reviewedAt)) !== ptDateFmt.format(new Date());
+      if (lapsed) { out.reviewed = false; out.lapsed = true; }
+    }
+    return out;
+  }
+  // Reviewed now and still inside its week (GAL / back-and-forth): left out of the main lists until it comes back.
+  function snoozed(id) { var rv = getReview(id); return rv.reviewed && rv.rule === "week"; }
+  var saveTimers = {};
+  function saveReview(id, body, onDone) {
+    BQEBoard.api(BOARD, { method: "POST", body: Object.assign({ id: String(id) }, body) }).then(function (j) {
+      REVIEWS[id] = j.review; if (onDone) onDone();
+    }).catch(function (e) { setStatus("Couldn't save (" + e.message + ")", true); });
+  }
+  function setReviewed(id, val) {
+    var r = getReview(id), now = new Date().toISOString();
+    REVIEWS[id] = { reviewed: val, note: r.note, by: VIEWER && VIEWER.name, at: now, rat: val ? now : null, history: (REVIEWS[id] || {}).history || [] };
+    saveReview(id, { action: "review", reviewed: val }, REVIEW_RULE[id] === "week" ? renderAll : null);
+  }
+  // Notes save 0.8 s after typing stops.
+  function setNote(id, text) {
+    var cur = REVIEWS[id] || { reviewed: false, history: [] };
+    REVIEWS[id] = Object.assign({}, cur, { note: text });
+    clearTimeout(saveTimers[id]);
+    saveTimers[id] = setTimeout(function () { saveReview(id, { action: "review", note: text }); }, 800);
+  }
+  // "Recheck": a ticket reviewed on a PRIOR calendar day (see isPriorDay below)
+  // shows an extra checkbox to flag it for a fresh look. Checking it archives the old
+  // reviewed/note pair into history (so the prior context isn't lost) and resets reviewed/note
+  // for today's pass - the ticket goes back to looking unreviewed everywhere it renders.
+  function isPriorDay(ts) {
+    if (!ts) return false;
+    var a = new Date(ts), b = new Date();
+    return a.getFullYear() !== b.getFullYear() || a.getMonth() !== b.getMonth() || a.getDate() !== b.getDate();
+  }
+  function fmtReviewDate(ts) {
+    return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  function recheckTicket(id) {
+    saveReview(id, { action: "recheck" }, renderAll);
+  }
+  function recheckLabelHtml(id, rv) {
+    if (rv.rule || !(rv.reviewed && isPriorDay(rv.updatedAt))) return "";   // timed reviews come back on their own
+    return '<label class="review-toggle recheck-toggle"><input type="checkbox" data-recheck-id="' + id + '"> Reviewed ' + fmtReviewDate(rv.updatedAt) + ': recheck &amp; leave a fresh note?</label>';
+  }
+  function reviewHistoryHtml(rv) {
+    if (!rv.history.length) return "";
+    return '<details class="review-history"><summary>' + rv.history.length + ' earlier note' + (rv.history.length === 1 ? "" : "s") + '</summary>' +
+      rv.history.slice().reverse().map(function (h) {
+        return '<div class="review-history-item"><span class="review-history-date">' + fmtReviewDate(h.updatedAt) + '</span>' + (h.note ? escapeHtml(h.note) : '(no note)') + (h.by ? ' <span class="review-by">&middot; ' + escapeHtml(h.by) + '</span>' : '') + '</div>';
+      }).join("") + '</details>';
+  }
+  function reviewByHtml(rv) {
+    var s = rv.by && rv.updatedAt ? escapeHtml(rv.by) + ' &middot; ' + fmtReviewDate(rv.updatedAt) : '';
+    if (rv.reviewed && rv.backOn) s += ' &middot; back on the list ' + fmtReviewDate(rv.backOn);
+    else if (rv.reviewed && rv.rule === "day") s += ' &middot; reviewed today';
+    else if (rv.lapsed) s += ' &middot; review from ' + fmtReviewDate(rv.reviewedAt) + ' has lapsed';
+    return s ? '<span class="review-by">' + s + '</span>' : '';
+  }
+  function reviewControlsHtml(id, rv) {
+    return '<div class="ticket-item-review">' +
+      '<label class="review-toggle"><input type="checkbox" data-review-id="' + id + '"' + (rv.reviewed ? " checked" : "") + '> Reviewed</label>' +
+      '<input type="text" class="review-note-input" data-note-id="' + id + '" placeholder="Add a note&hellip;" value="' + escapeHtml(rv.note) + '">' +
+      reviewByHtml(rv) + recheckLabelHtml(id, rv) +
+      '</div>' + reviewHistoryHtml(rv);
+  }
+  // Compact variant for the main table's Notes cell, which renders the Reviewed checkbox and
+  // note input directly in their own <td>s rather than via reviewControlsHtml.
+  function tableRecheckHtml(id, rv) {
+    var recheck = recheckLabelHtml(id, rv);
+    return (recheck ? '<div class="table-recheck">' + recheck + '</div>' : "") + reviewHistoryHtml(rv);
+  }
+  // Delegated at the document level (not per-container) so it works everywhere a ticket
+  // renders - table, tier/assignee/status/reason/KPI drilldowns, GAL/setup/ES sections -
+  // without wiring a listener in each one. Reviewed/note edits only persist to localStorage
+  // (deliberately no re-render - would blow away focus/cursor position while typing a note);
+  // a recheck click DOES trigger a full re-render since it changes which controls should show.
+  document.addEventListener("change", function (e) {
+    var cb = e.target.closest("[data-review-id]");
+    if (cb) {
+      setReviewed(cb.getAttribute("data-review-id"), cb.checked);
+      var item = cb.closest(".ticket-item"); if (item) item.classList.toggle("reviewed", cb.checked);
+      var row = cb.closest("tr"); if (row) row.classList.toggle("reviewed", cb.checked);
+      return;
+    }
+    var rc = e.target.closest("[data-recheck-id]");
+    if (rc && rc.checked) {
+      recheckTicket(rc.getAttribute("data-recheck-id"));
+      renderAll();
+    }
+  });
+  document.addEventListener("input", function (e) {
+    var note = e.target.closest("[data-note-id]");
+    if (note) setNote(note.getAttribute("data-note-id"), note.value);
+  });
+
+  // ---- Recently-checked-in badge: read-only, reflects a real Zendesk internal note someone
+  // posted directly on the ticket (see buildRows - if the most recent
+  // comment of any kind on a ticket is a private note less than 24h old, it's suppressed
+  // from the flagged/needs-attention views until something new happens). No button, no
+  // write-back from this page - posting the note itself always happens in Zendesk.
+  function checkinControlsHtml(r) {
+    if (!r[RC.checkedInRecently]) return "";
+    return '<div class="checkin-status checkin-status-done">&#10003; Recently checked in' +
+      (r[RC.checkinNote] ? ': "' + escapeHtml(plainText(r[RC.checkinNote])) + '"' : '') + '</div>';
+  }
+
+  // ---- Shared ticket-item renderer (used by tier/assignee/status/reason drilldowns) ----
+  function renderTicketItemList(rows, opts) {
+    opts = opts || {};
+    var sorted = rows.slice().sort(function (a, b) { return b[RC.hours] - a[RC.hours]; });
+    if (!sorted.length) return '<div class="panel-empty">No tickets in this selection.</div>';
+    return sorted.map(function (r) {
+      var snippet = r[RC.snippet] ? '<div class="ticket-item-snippet">"' + escapeHtml(plainText(r[RC.snippet])) + '"</div>' : "";
+      var rv = getReview(r[RC.id]);
+      return '<div class="ticket-item' + ((rv.reviewed || r[RC.checkedInRecently]) ? " reviewed" : "") + '">' +
+        '<div class="ticket-item-head">' + ticketLink(r) +
+          '<span class="ticket-item-status">' + escapeHtml(STATUS_LABEL[r[RC.status]] || r[RC.status]) + '</span>' +
+          '<span class="flags-cell">' + chipsHtml(r) + '</span>' +
+        '</div>' +
+        '<div class="ticket-item-subject">' + escapeHtml(r[RC.subject] || "(no subject)") + '</div>' +
+        '<div class="ticket-item-meta">' + escapeHtml(whoLabel(r)) + (opts.showAssignee ? ' &middot; assigned to ' + escapeHtml(r[RC.assignee]) : '') + ' &middot; ' + fmtHours(r[RC.hours]) + ' since last activity</div>' +
+        snippet +
+        reviewControlsHtml(r[RC.id], rv) +
+        checkinControlsHtml(r) +
+        '</div>';
+    }).join("");
+  }
+
+  // ---- KPIs ----
+  var KPI_ROW_SETS = {};
+  var activeKpiKey = null;
+
+  function renderKPIs() {
+    var noReply = flagged.filter(function (r) { return r[RC.flagNoReply]; });
+    // Heavy back-and-forth isn't urgent by itself, so it comes from workingRows, not flagged.
+    var backforthAll = workingRows.filter(function (r) { return r[RC.flagBackforth]; });
+    var backforth = backforthAll.filter(function (r) { return !snoozed(String(r[RC.id])); });
+    var urgent = flagged.filter(function (r) { return r[RC.hours] <= 48; });
+    var aging = flagged.filter(function (r) { return r[RC.hours] > 48 && r[RC.hours] <= 168; });
+    var stale = flagged.filter(function (r) { return r[RC.hours] > 168; });
+    var galRows = ROWS.filter(function (r) { return r[RC.gal]; });
+    var qbdRows = ROWS.filter(function (r) { return r[RC.integration] === "qbd"; });
+    var qboRows = ROWS.filter(function (r) { return r[RC.integration] === "qbo"; });
+    var setupRows = ROWS.filter(function (r) { return r[RC.setup]; });
+    var galDoneRows = ROWS.filter(function (r) { return galDoneRefs(r).length > 0; });
+    var outsideRows = ROWS.filter(function (r) { return !r[RC.inGroup]; });
+    var checkedInRows = workingRows.filter(function (r) { return r[RC.checkedInRecently]; });
+
+    KPI_ROW_SETS = { open: ROWS, flagged: flagged, urgent: urgent, aging: aging, stale: stale, noReply: noReply, backforth: backforth,
+      qbd: qbdRows, qbo: qboRows, setup: setupRows, galDone: galDoneRows, gal: galRows, outside: outsideRows, checkedIn: checkedInRows };
+
+    var tiles = [
+      { key: "open", label: "Open tickets", value: fmtNum(ROWS.length), sub: "not yet Solved" },
+      { key: "flagged", label: "Flagged", value: fmtNum(flagged.length), sub: (ROWS.length ? Math.round(flagged.length / ROWS.length * 100) : 0) + "% of open" },
+      { key: "urgent", label: "Needs attention now", value: fmtNum(urgent.length), sub: "≤48h since activity", crit: urgent.length > 0 },
+      { key: "aging", label: "Aging", value: fmtNum(aging.length), sub: "2–7 days" },
+      { key: "stale", label: "Long-stale backlog", value: fmtNum(stale.length), sub: "7+ days" },
+      { key: "noReply", label: "No agent reply yet", value: fmtNum(noReply.length), sub: "never touched" },
+      { key: "backforth", label: "Heavy back-and-forth", value: fmtNum(backforth.length), sub: "10+ comments, not urgent by itself" + (backforthAll.length > backforth.length ? " · " + (backforthAll.length - backforth.length) + " reviewed this week" : "") },
+      { key: "qbd", label: "QuickBooks Desktop", value: fmtNum(qbdRows.length), sub: (ROWS.length ? Math.round(qbdRows.length / ROWS.length * 100) : 0) + "% of open" },
+      { key: "qbo", label: "QuickBooks Online", value: fmtNum(qboRows.length), sub: (ROWS.length ? Math.round(qboRows.length / ROWS.length * 100) : 0) + "% of open" },
+      { key: "setup", label: "Setup requests", value: fmtNum(setupRows.length), sub: "setup, configuration, connect" },
+      { key: "galDone", label: "Dev closed, ticket open", value: fmtNum(galDoneRows.length), sub: "GAL Done in Jira, customer not updated?", crit: galDoneRows.length > 0 },
+      { key: "gal", label: "With Dev (GAL)", value: fmtNum(galRows.length), sub: (ROWS.length ? Math.round(galRows.length / ROWS.length * 100) : 0) + "% of open" },
+      { key: "outside", label: "Outside the Integrations Team", value: fmtNum(outsideRows.length), sub: "integration tickets in other groups" },
+      { key: "checkedIn", label: "Recently checked in", value: fmtNum(checkedInRows.length), sub: "internal note, last 24h" },
+      // ES_ROWS has a different shape (Jira issues), so this tile scrolls to its own section instead of a drilldown.
+      { key: "es", label: "ES Escalations (integrations)", value: fmtNum(ES_ROWS.length), sub: "QuickBooks, Xero, MYOB and other components", scrollTo: "esSection" }
+    ];
+
+    document.getElementById("kpiGrid").innerHTML = tiles.map(function (t) {
+      var active = activeKpiKey === t.key;
+      var attr = t.scrollTo ? 'data-kpi-scroll="' + t.scrollTo + '"' : 'data-kpi-key="' + t.key + '"';
+      return '<button type="button" class="kpi' + (t.crit ? ' critical' : '') + (active ? ' active' : '') + '" ' + attr + '>' +
+        '<div class="kpi-label">' + t.label + '</div>' +
+        '<div class="kpi-value' + (t.crit ? ' crit' : '') + '">' + t.value + '</div>' +
+        '<div class="kpi-sub">' + t.sub + '</div></button>';
+    }).join("");
+
+    renderKpiDrilldown();
+  }
+
+  function renderKpiDrilldown() {
+    var wrap = document.getElementById("kpiDrilldownWrap");
+    var rows = activeKpiKey && KPI_ROW_SETS[activeKpiKey];
+    if (!rows) { wrap.innerHTML = ""; return; }
+    wrap.innerHTML = '<div class="panel kpi-drilldown">' +
+      '<div class="section-head">' +
+        '<h2 class="section-title">' + fmtNum(rows.length) + ' ticket' + (rows.length === 1 ? "" : "s") + '</h2>' +
+        '<button type="button" class="pill-toggle" data-kpi-close="1">Close</button>' +
+      '</div>' +
+      '<div style="margin-top:10px;">' + renderTicketItemList(rows, { showAssignee: true }) + '</div>' +
+      '</div>';
+  }
+
+  document.getElementById("kpiGrid").addEventListener("click", function (e) {
+    var scrollBtn = e.target.closest("[data-kpi-scroll]");
+    if (scrollBtn) {
+      var target = document.getElementById(scrollBtn.getAttribute("data-kpi-scroll"));
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    var btn = e.target.closest("[data-kpi-key]");
+    if (!btn) return;
+    var key = btn.getAttribute("data-kpi-key");
+    activeKpiKey = activeKpiKey === key ? null : key;
+    renderKPIs();
+    if (activeKpiKey) document.getElementById("kpiDrilldownWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  document.getElementById("kpiDrilldownWrap").addEventListener("click", function (e) {
+    if (e.target.closest("[data-kpi-close]")) { activeKpiKey = null; renderKPIs(); }
+  });
+
+  // ---- Generic bar-row chart ----
+  function renderBarChart(elId, items, expandedMap, opts) {
+    opts = opts || {};
+    var el = document.getElementById(elId);
+    if (!items.length) { el.innerHTML = '<div class="empty-state">' + (opts.emptyText || "No flagged tickets right now.") + '</div>'; return; }
+    var total = items.reduce(function (s, it) { return s + it.count; }, 0);
+    var max = Math.max.apply(null, items.map(function (it) { return it.count; }).concat([1]));
+    el.innerHTML = items.map(function (it) {
+      var pct = Math.round((it.count / max) * 100);
+      var share = total ? Math.round((it.count / total) * 100) : 0;
+      var open = !!expandedMap[it.key];
+      var row = '<div class="bar-row clickable" data-bar-key="' + escapeHtml(it.key) + '">' +
+        '<div class="bar-label"><span class="bar-chevron' + (open ? ' open' : '') + '">&#9656;</span>' +
+        '<span class="swatch" style="background:var(' + it.colorVar + ')"></span>' + escapeHtml(it.label) + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:var(' + it.colorVar + ')"></div></div>' +
+        '<div class="bar-figs"><b>' + fmtNum(it.count) + '</b> &middot; ' + share + '%</div>' +
+        '</div>';
+      var copyBtn = it.copyable ? '<div class="agent-toolbar"><button type="button" class="copy-btn" data-copy-agent="' + escapeHtml(it.key) + '">Copy list</button></div>' : '';
+      var drill = open ? '<div class="ticket-drilldown">' + copyBtn + renderTicketItemList(it.rows) + '</div>' : '';
+      return row + drill;
+    }).join("");
+  }
+
+  function wireBarChartToggle(elId, expandedMap, renderFn, copyCtx) {
+    document.getElementById(elId).addEventListener("click", function (e) {
+      var copyBtn = e.target.closest("[data-copy-agent]");
+      if (copyBtn && copyCtx) {
+        var key = copyBtn.getAttribute("data-copy-agent");
+        var groups = copyCtx.groups(), names = copyCtx.names();
+        var rows = (groups[key] || []).slice().sort(function (a, b) { return b[RC.hours] - a[RC.hours]; });
+        var text = rows.map(function (r) {
+          return "#" + r[RC.id] + " " + r[RC.url] + "\n  " + (r[RC.subject] || "(no subject)") +
+            "\n  " + whoLabel(r) + " · " + fmtHours(r[RC.hours]) + " since activity · " +
+            flagsOf(r).map(function (f) { return f.label; }).join(", ");
+        }).join("\n\n");
+        var header = copyCtx.header(rows.length, names[key] || key);
+        var full = header + text;
+        function flash(ok) {
+          copyBtn.textContent = ok ? "Copied!" : "Copy failed";
+          copyBtn.classList.toggle("copied", ok);
+          setTimeout(function () { copyBtn.textContent = "Copy list"; copyBtn.classList.remove("copied"); }, 1800);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(full).then(function () { flash(true); }).catch(function () { flash(false); });
+        } else {
+          // Fallback for contexts without the async Clipboard API (older/insecure contexts).
+          try {
+            var ta = document.createElement("textarea");
+            ta.value = full; ta.style.position = "fixed"; ta.style.opacity = "0";
+            document.body.appendChild(ta); ta.select();
+            var ok = document.execCommand("copy");
+            document.body.removeChild(ta);
+            flash(ok);
+          } catch (err) { flash(false); }
+        }
+        return;
+      }
+      var row = e.target.closest("[data-bar-key]");
+      if (!row) return;
+      var k = row.getAttribute("data-bar-key");
+      expandedMap[k] = !expandedMap[k];
+      renderFn();
+    });
+  }
+
+  // ---- Tier chart ----
+  var expandedTier = {};
+  var expandedInt = {};
+  function renderTierChart() {
+    var urgent = flagged.filter(function (r) { return r[RC.hours] <= 48; });
+    var aging = flagged.filter(function (r) { return r[RC.hours] > 48 && r[RC.hours] <= 168; });
+    var stale = flagged.filter(function (r) { return r[RC.hours] > 168; });
+    var items = [
+      { key: "urgent", label: "Needs attention now", count: urgent.length, rows: urgent, colorVar: "--critical" },
+      { key: "aging", label: "Aging (2-7 days)", count: aging.length, rows: aging, colorVar: "--warning" },
+      { key: "stale", label: "Long-stale backlog (7+ days)", count: stale.length, rows: stale, colorVar: "--ink-3" }
+    ].filter(function (it) { return it.count > 0; });
+    renderBarChart("tierChart", items, expandedTier);
+  }
+
+  // ---- Assignee chart (export per agent) ----
+  var expandedAssignee = {};
+  var agentGroups = {}, agentNames = {};
+  var ASSIGNEE_PALETTE = ["--accent", "--seg-premium", "--seg-low", "--warning", "--good", "--critical", "--ink-3"];
+  function renderAssigneeChart() {
+    agentGroups = {};
+    flagged.forEach(function (r) {
+      var name = r[RC.assignee] || "Unassigned";
+      var key = "a:" + name;
+      agentNames[key] = name;
+      (agentGroups[key] = agentGroups[key] || []).push(r);
+    });
+    var items = Object.keys(agentGroups).map(function (k, i) {
+      return { key: k, label: agentNames[k], count: agentGroups[k].length, rows: agentGroups[k], colorVar: ASSIGNEE_PALETTE[i % ASSIGNEE_PALETTE.length], copyable: true };
+    }).sort(function (a, b) { return b.count - a.count; });
+    renderBarChart("assigneeChart", items, expandedAssignee);
+  }
+
+  // ---- Heavy back-and-forth, by assignee (still worth surfacing by
+  // assignee, but not part of `flagged`/urgent - sourced from workingRows, not flagged) ----
+  var expandedBackforthAssignee = {};
+  var backforthAgentGroups = {}, backforthAgentNames = {};
+  // A reviewed GAL / back-and-forth ticket sits in a folded "reviewed this week" list (notes still editable there)
+  // until 7 days after its review, then returns to the main list on its own.
+  var SNOOZE_OPEN = {};
+  function snoozedHtml(key, rows) {
+    if (!rows.length) return "";
+    return '<details class="panel review-history" data-snooze="' + key + '" style="margin-top:10px;"' + (SNOOZE_OPEN[key] ? " open" : "") + '><summary>' +
+      rows.length + ' reviewed in the last 7 days, each comes back a week after its review</summary>' +
+      '<div style="margin-top:8px;">' + renderTicketItemList(rows, { showAssignee: true }) + '</div></details>';
+  }
+  document.addEventListener("toggle", function (e) {
+    var d = e.target; if (d && d.getAttribute && d.getAttribute("data-snooze")) SNOOZE_OPEN[d.getAttribute("data-snooze")] = d.open;
+  }, true);
+  function renderBackforthAssigneeChart() {
+    backforthAgentGroups = {};
+    var all = workingRows.filter(function (r) { return r[RC.flagBackforth]; });
+    document.getElementById("backforthSnoozed").innerHTML = snoozedHtml("backforth", all.filter(function (r) { return snoozed(String(r[RC.id])); }));
+    all.filter(function (r) { return !snoozed(String(r[RC.id])); }).forEach(function (r) {
+      var name = r[RC.assignee] || "Unassigned";
+      var key = "a:" + name;
+      backforthAgentNames[key] = name;
+      (backforthAgentGroups[key] = backforthAgentGroups[key] || []).push(r);
+    });
+    var items = Object.keys(backforthAgentGroups).map(function (k, i) {
+      return { key: k, label: backforthAgentNames[k], count: backforthAgentGroups[k].length, rows: backforthAgentGroups[k], colorVar: ASSIGNEE_PALETTE[i % ASSIGNEE_PALETTE.length], copyable: true };
+    }).sort(function (a, b) { return b.count - a.count; });
+    renderBarChart("backforthAssigneeChart", items, expandedBackforthAssignee, { emptyText: "No heavy back-and-forth tickets right now." });
+  }
+
+  // ---- Status chart ----
+  var expandedStatus = {};
+  function renderStatusChart() {
+    var groups = {};
+    workingRows.forEach(function (r) { (groups[r[RC.status]] = groups[r[RC.status]] || []).push(r); });
+    var items = Object.keys(groups).map(function (s) {
+      return { key: s, label: STATUS_LABEL[s] || s, count: groups[s].length, rows: groups[s], colorVar: STATUS_VAR[s] || "--ink-3" };
+    }).sort(function (a, b) { return b.count - a.count; });
+    renderBarChart("statusChart", items, expandedStatus);
+  }
+
+  // ---- Reason chart ----
+  // Heavy back-and-forth isn't listed here - it no longer makes a ticket "flagged" by itself,
+  // so it can't be one of `flagged`'s reasons. See the standalone "Heavy back-and-forth, by
+  // assignee" section for that signal.
+  var expandedReason = {};
+  function renderReasonChart() {
+    var noReply = flagged.filter(function (r) { return r[RC.flagNoReply]; });
+    var awaiting = flagged.filter(function (r) { return r[RC.flagAwaiting]; });
+    var items = [
+      { key: "noreply", label: "No agent reply yet", count: noReply.length, rows: noReply, colorVar: "--critical" },
+      { key: "awaiting", label: "Awaiting our reply", count: awaiting.length, rows: awaiting, colorVar: "--warning" }
+    ].filter(function (it) { return it.count > 0; });
+    renderBarChart("reasonChart", items, expandedReason);
+  }
+
+  // ---- Ticket Status Detail and group charts (every open ticket) ----
+  var expandedDetail = {}, expandedGroup = {};
+  var DETAIL_PALETTE = ["--accent", "--warning", "--seg-premium", "--seg-low", "--good", "--critical", "--ink-3"];
+  function renderGroupedChart(elId, keyFn, labelFn, expanded) {
+    var groups = {};
+    ROWS.forEach(function (r) { var k = keyFn(r); (groups[k] = groups[k] || []).push(r); });
+    var items = Object.keys(groups).map(function (k) { return { key: k, label: labelFn(k), count: groups[k].length, rows: groups[k] }; })
+      .sort(function (a, b) { return b.count - a.count; });
+    items.forEach(function (it, i) { it.colorVar = DETAIL_PALETTE[i % DETAIL_PALETTE.length]; });
+    renderBarChart(elId, items, expanded, { emptyText: "No open tickets." });
+  }
+  function renderDetailChart() { renderGroupedChart("detailChart", function (r) { return r[RC.statusDetail] || ""; }, detailLabel, expandedDetail); }
+  function renderGroupChart() { renderGroupedChart("groupChart", function (r) { return r[RC.group] || "(no group)"; }, function (k) { return k; }, expandedGroup); }
+
+  wireBarChartToggle("tierChart", expandedTier, renderTierChart);
+  wireBarChartToggle("integrationChart", expandedInt, renderIntegrationSection);
+  wireBarChartToggle("assigneeChart", expandedAssignee, renderAssigneeChart, {
+    groups: function () { return agentGroups; },
+    names: function () { return agentNames; },
+    header: function (n, name) { return "Integrations Watch: " + n + " flagged ticket(s) assigned to " + name + " (" + GENERATED_AT + ")\n\n"; }
+  });
+  wireBarChartToggle("statusChart", expandedStatus, renderStatusChart);
+  wireBarChartToggle("reasonChart", expandedReason, renderReasonChart);
+  wireBarChartToggle("detailChart", expandedDetail, renderDetailChart);
+  wireBarChartToggle("groupChart", expandedGroup, renderGroupChart);
+  wireBarChartToggle("backforthAssigneeChart", expandedBackforthAssignee, renderBackforthAssigneeChart, {
+    groups: function () { return backforthAgentGroups; },
+    names: function () { return backforthAgentNames; },
+    header: function (n, name) { return "Integrations Watch: " + n + " heavy back-and-forth ticket(s) assigned to " + name + " (" + GENERATED_AT + ")\n\n"; }
+  });
+
+  // ---- Where to Focus ----
+  var SUGGESTIONS_STORAGE_KEY = "integrationsWatch.completedSuggestions.v1";
+  function loadCompletedSuggestions() { try { return JSON.parse(localStorage.getItem(SUGGESTIONS_STORAGE_KEY)) || {}; } catch (e) { return {}; } }
+  function saveCompletedSuggestions() { try { localStorage.setItem(SUGGESTIONS_STORAGE_KEY, JSON.stringify(completedSuggestions)); } catch (e) {} }
+  var completedSuggestions = loadCompletedSuggestions();
+  var suggestionsView = "outstanding";
+
+  function fmtSuggestionDate(ms) { if (!ms) return ""; return new Date(ms).toISOString().split("T")[0]; }
+
+  function buildSuggestionCandidates() {
+    return flagged.map(function (r) {
+      var score = r[RC.hours];
+      if (r[RC.flagNoReply]) score += 200;
+      if (r[RC.flagBackforth]) score += 40;
+      var reasons = flagsOf(r).map(function (f) { return f.label; }).join(", ");
+      return {
+        key: "ticket:" + r[RC.id],
+        score: score,
+        text: '<a href="' + r[RC.url] + '" target="_blank" rel="noopener">#' + r[RC.id] + '</a> <b>' + escapeHtml(r[RC.subject] || "(no subject)") + '</b>: ' +
+          escapeHtml(whoLabel(r)) + ', assigned to ' + escapeHtml(r[RC.assignee]) + ', ' + fmtHours(r[RC.hours]) + ' since activity (' + reasons + ')'
+      };
+    }).sort(function (a, b) { return b.score - a.score; });
+  }
+
+  function renderSuggestions() {
+    var el = document.getElementById("suggestionsPanel");
+    if (suggestionsView === "completed") {
+      var completedList = Object.keys(completedSuggestions).map(function (k) { return completedSuggestions[k]; })
+        .sort(function (a, b) { return b.completedAt - a.completedAt; });
+      document.getElementById("suggestionsCount").textContent = completedList.length.toLocaleString() + " completed";
+      if (!completedList.length) { el.innerHTML = '<div class="panel-empty">Nothing marked completed yet.</div>'; return; }
+      el.innerHTML = completedList.map(function (s) {
+        return '<div class="suggestion-item">' +
+          '<span class="suggestion-check done">&#10003;</span>' +
+          '<div class="suggestion-body"><div class="suggestion-text">' + s.text + '</div>' +
+            '<div class="suggestion-meta">Completed ' + fmtSuggestionDate(s.completedAt) + '</div></div>' +
+          '<button class="suggestion-restore" data-restore-key="' + escapeHtml(s.key) + '">Restore</button>' +
+          '</div>';
+      }).join("");
+    } else {
+      var all = buildSuggestionCandidates().filter(function (c) { return !completedSuggestions[c.key]; }).slice(0, 10);
+      document.getElementById("suggestionsCount").textContent = all.length.toLocaleString() + " outstanding";
+      if (!all.length) { el.innerHTML = '<div class="panel-empty">Nothing outstanding right now.</div>'; return; }
+      el.innerHTML = all.map(function (s) {
+        return '<div class="suggestion-item">' +
+          '<span class="suggestion-check" data-complete-key="' + escapeHtml(s.key) + '" data-complete-text="' + escapeHtml(s.text) + '"></span>' +
+          '<div class="suggestion-body"><div class="suggestion-text">' + s.text + '</div></div>' +
+          '</div>';
+      }).join("");
+    }
+  }
+
+  document.getElementById("suggestionsViewToggle").addEventListener("click", function () {
+    suggestionsView = suggestionsView === "outstanding" ? "completed" : "outstanding";
+    this.setAttribute("aria-pressed", String(suggestionsView === "completed"));
+    this.textContent = suggestionsView === "completed" ? "Show outstanding" : "Show completed";
+    renderSuggestions();
+  });
+  document.getElementById("suggestionsPanel").addEventListener("click", function (e) {
+    var check = e.target.closest("[data-complete-key]");
+    if (check) {
+      var key = check.getAttribute("data-complete-key");
+      completedSuggestions[key] = { key: key, text: check.getAttribute("data-complete-text"), completedAt: Date.now() };
+      saveCompletedSuggestions();
+      renderSuggestions();
+      return;
+    }
+    var restore = e.target.closest("[data-restore-key]");
+    if (restore) {
+      delete completedSuggestions[restore.getAttribute("data-restore-key")];
+      saveCompletedSuggestions();
+      renderSuggestions();
+    }
+  });
+
+  // ---- Main ticket table ----
+  var tableState = { filter: "other", search: "", sortKey: "hours", sortDir: "desc", page: 1, pageSize: 20 };
+
+  // "No flags" = tickets no other section lists: not needs-attention, not heavy back-and-forth.
+  function unflaggedRows() {
+    return workingRows.filter(function (r) { return !r[RC.needsAttention] && !r[RC.flagBackforth]; });
+  }
+
+  function tableRows() {
+    var rows = tableState.filter === "all" ? workingRows : unflaggedRows();
+    if (tableState.search) {
+      var q = tableState.search.toLowerCase();
+      rows = rows.filter(function (r) {
+        return (r[RC.subject] || "").toLowerCase().indexOf(q) !== -1 || intLabel(r[RC.integration]).toLowerCase().indexOf(q) !== -1 || String(r[RC.id]).indexOf(q) !== -1 || (r[RC.requester] || "").toLowerCase().indexOf(q) !== -1 || (r[RC.org] || "").toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    var key = tableState.sortKey, dir = tableState.sortDir === "asc" ? 1 : -1;
+    var sortFns = {
+      id: function (r) { return r[RC.id]; },
+      integration: function (r) { return intRank(r[RC.integration]); },
+      subject: function (r) { return (r[RC.subject] || "").toLowerCase(); },
+      requester: function (r) { return whoLabel(r).toLowerCase(); },
+      assignee: function (r) { return (r[RC.assignee] || "").toLowerCase(); },
+      status: function (r) { return r[RC.status]; },
+      hours: function (r) { return r[RC.hours]; },
+      comments: function (r) { return r[RC.comments]; },
+      flags: function (r) { return flagsOf(r).length; },
+      reviewed: function (r) { return getReview(r[RC.id]).reviewed ? 1 : 0; }
+    };
+    var fn = sortFns[key] || sortFns.hours;
+    rows = rows.slice().sort(function (a, b) { var av = fn(a), bv = fn(b); return av < bv ? -1 * dir : av > bv ? 1 * dir : 0; });
+    return rows;
+  }
+
+  function renderTable() {
+    var rows = tableRows();
+    var otherCount = unflaggedRows().length;
+    document.getElementById("tableCount").textContent = fmtNum(otherCount) + " with no flags · " + fmtNum(workingRows.length) + " open in total";
+    var totalPages = Math.max(1, Math.ceil(rows.length / tableState.pageSize));
+    if (tableState.page > totalPages) tableState.page = totalPages;
+    var start = (tableState.page - 1) * tableState.pageSize;
+    var pageRows = rows.slice(start, start + tableState.pageSize);
+
+    var tbody = document.getElementById("ticketTableBody");
+    if (!pageRows.length) {
+      tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state">No tickets match this filter.</div></td></tr>';
+    } else {
+      tbody.innerHTML = pageRows.map(function (r) {
+        var rv = getReview(r[RC.id]);
+        return '<tr' + ((rv.reviewed || r[RC.checkedInRecently]) ? ' class="reviewed"' : "") + '>' +
+          '<td>' + ticketLink(r) + '</td>' +
+          '<td>' + escapeHtml(intShort(r[RC.integration])) + (r[RC.setup] ? '<div class="review-by">setup</div>' : '') + '</td>' +
+          '<td class="subject-cell">' + escapeHtml(r[RC.subject] || "(no subject)") + '</td>' +
+          '<td>' + escapeHtml(whoLabel(r)) + '</td>' +
+          '<td>' + escapeHtml(r[RC.assignee]) + '</td>' +
+          '<td>' + escapeHtml(STATUS_LABEL[r[RC.status]] || r[RC.status]) + '</td>' +
+          '<td>' + fmtHours(r[RC.hours]) + '</td>' +
+          '<td>' + fmtNum(r[RC.comments]) + '</td>' +
+          '<td class="flags-cell">' + (chipsHtml(r) || '&mdash;') + '</td>' +
+          '<td><input type="checkbox" data-review-id="' + r[RC.id] + '"' + (rv.reviewed ? " checked" : "") + '></td>' +
+          '<td><input type="text" class="table-note-input" data-note-id="' + r[RC.id] + '" placeholder="Note&hellip;" value="' + escapeHtml(rv.note) + '">' + reviewByHtml(rv) + tableRecheckHtml(r[RC.id], rv) + '</td>' +
+          '<td>' + checkinControlsHtml(r) + '</td>' +
+          '</tr>';
+      }).join("");
+    }
+
+    document.querySelectorAll("#ticketTable thead th").forEach(function (th) {
+      th.classList.toggle("sorted", th.getAttribute("data-key") === tableState.sortKey);
+      var arrow = th.querySelector(".arrow");
+      if (!arrow) return;
+      if (th.getAttribute("data-key") === tableState.sortKey) arrow.textContent = tableState.sortDir === "asc" ? "▲" : "▼";
+      else arrow.textContent = "▾";
+    });
+
+    var pager = document.getElementById("ticketPager");
+    if (rows.length <= tableState.pageSize) { pager.innerHTML = ""; }
+    else {
+      pager.innerHTML =
+        '<button type="button" data-page="prev"' + (tableState.page <= 1 ? " disabled" : "") + '>Prev</button>' +
+        '<span>Showing ' + (start + 1) + '-' + Math.min(start + tableState.pageSize, rows.length) + ' of ' + rows.length + '</span>' +
+        '<button type="button" data-page="next"' + (tableState.page >= totalPages ? " disabled" : "") + '>Next</button>';
+    }
+  }
+
+  document.querySelectorAll('[data-table-filter]').forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll('[data-table-filter]').forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      btn.setAttribute("aria-pressed", "true");
+      tableState.filter = btn.getAttribute("data-table-filter");
+      tableState.page = 1;
+      renderTable();
+    });
+  });
+  document.getElementById("tableSearch").addEventListener("input", function () {
+    tableState.search = this.value;
+    tableState.page = 1;
+    renderTable();
+  });
+  document.querySelectorAll("#ticketTable thead th").forEach(function (th) {
+    th.addEventListener("click", function () {
+      var key = th.getAttribute("data-key");
+      if (!key) return;
+      if (tableState.sortKey === key) tableState.sortDir = tableState.sortDir === "asc" ? "desc" : "asc";
+      else { tableState.sortKey = key; tableState.sortDir = key === "subject" || key === "requester" || key === "assignee" || key === "integration" ? "asc" : "desc"; }
+      renderTable();
+    });
+  });
+  document.getElementById("ticketPager").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-page]");
+    if (!btn) return;
+    if (btn.getAttribute("data-page") === "prev") tableState.page--; else tableState.page++;
+    renderTable();
+  });
+
+  // ---- Trend chart ----
+  function renderTrendChart() {
+    var el = document.getElementById("trendChart");
+    if (HISTORY.length < 2) {
+      el.innerHTML = '<div class="empty-state">The trend builds up over time: one point per hour on weekdays.</div>';
+      document.getElementById("trendLegend").innerHTML = "";
+      return;
+    }
+    var SERIES = [
+      { idx: 1, label: "Open", colorVar: "--ink-3" },
+      { idx: 2, label: "Flagged", colorVar: "--critical" },
+      { idx: 6, label: "QuickBooks Desktop", colorVar: "--accent" },
+      { idx: 7, label: "QuickBooks Online", colorVar: "--seg-premium" },
+      { idx: 9, label: "With Dev (GAL)", colorVar: "--warning" }
+    ];
+    document.getElementById("trendLegend").innerHTML = SERIES.map(function (s) {
+      return '<span><span class="dot" style="background:var(' + s.colorVar + ')"></span>' + s.label + '</span>';
+    }).join("");
+
+    var W = 1080, H = 260, padL = 40, padR = 16, padT = 14, padB = 30;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var n = HISTORY.length;
+    var xStep = n > 1 ? plotW / (n - 1) : 0;
+    var maxVal = 0;
+    HISTORY.forEach(function (row) { maxVal = Math.max(maxVal, row[1], row[2], row[6] || 0, row[7] || 0, row[9] || 0); });
+    maxVal = Math.ceil((maxVal * 1.15) / 5) * 5 || 5;
+
+    function x(i) { return padL + i * xStep; }
+    function y(v) { return padT + plotH - (v / maxVal) * plotH; }
+
+    var gridN = 4, gridLines = "", gridLabels = "";
+    for (var g = 0; g <= gridN; g++) {
+      var val = Math.round((maxVal / gridN) * g);
+      var gy = y(val);
+      gridLines += '<line class="trend-gridline" x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" />';
+      gridLabels += '<text class="trend-axis-label" x="' + (padL - 8) + '" y="' + (gy + 3) + '" text-anchor="end">' + val + '</text>';
+    }
+    var labelEvery = Math.max(1, Math.ceil(n / 8));
+    var xLabels = "";
+    HISTORY.forEach(function (row, i) {
+      if (i % labelEvery !== 0 && i !== n - 1) return;
+      var d = new Date(row[0]);
+      xLabels += '<text class="trend-axis-label" x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + (d.getMonth() + 1) + '/' + d.getDate() + '</text>';
+    });
+
+    var paths = SERIES.map(function (s) {
+      var d = HISTORY.map(function (row, i) { return (i === 0 ? "M" : "L") + x(i) + "," + y(row[s.idx]); }).join(" ");
+      return '<path d="' + d + '" fill="none" stroke="var(' + s.colorVar + ')" stroke-width="2" />';
+    });
+
+    el.innerHTML = '<svg class="trend-svg" viewBox="0 0 ' + W + ' ' + H + '">' + gridLines + paths.join("") + gridLabels + xLabels + '</svg>';
+    document.getElementById("trendNote").textContent = n + " hourly points of history";
+  }
+
+  // ---- GAL / Dev Team section ----
+  function renderGalSection() {
+    var galRows = ROWS.filter(function (r) { return r[RC.gal]; });
+    var active = galRows.filter(function (r) { return !snoozed(String(r[RC.id])); });
+    var noSr = galRows.filter(function (r) { return flagsOf(r).some(function (f) { return f.key.indexOf("nosr:") === 0; }); });
+    document.getElementById("galNote").textContent = fmtNum(galRows.length) + " of " + fmtNum(ROWS.length) + " open tickets reference a GAL Jira ticket" +
+      (noSr.length ? " · " + noSr.length + " missing a Support Ranking" : "") + " · a review hides a ticket here for 7 days";
+    document.getElementById("galList").innerHTML = (active.length ? renderTicketItemList(active, { showAssignee: true })
+      : '<div class="panel-empty">' + (galRows.length ? "Every GAL ticket was reviewed in the last 7 days." : "No open integration tickets reference a GAL ticket.") + '</div>') +
+      snoozedHtml("gal", galRows.filter(function (r) { return snoozed(String(r[RC.id])); }));
+  }
+
+  // ---- Open tickets, by integration (every open ticket, GAL included) ----
+  function renderIntegrationSection() {
+    var groups = {};
+    ROWS.forEach(function (r) { (groups[r[RC.integration]] = groups[r[RC.integration]] || []).push(r); });
+    var keys = Object.keys(groups).sort(function (a, b) { return intRank(a) - intRank(b) || groups[b].length - groups[a].length; });
+    var items = keys.map(function (k, i) {
+      var rows = groups[k], setup = rows.filter(function (r) { return r[RC.setup]; }).length, gal = rows.filter(function (r) { return r[RC.gal]; }).length;
+      return { key: k, label: intLabel(k) + " (" + setup + " setup, " + gal + " with Dev)", count: rows.length, rows: rows,
+        colorVar: INT_VAR[k] || DETAIL_PALETTE[i % DETAIL_PALETTE.length] };
+    });
+    renderBarChart("integrationChart", items, expandedInt, { emptyText: "No open integration tickets." });
+    // Last 30 days, any status: [integration, kind, created, solved]
+    var rec = (DATA && DATA.recent) || [], c30 = 0, s30 = 0, qb30 = 0, setup30 = 0;
+    rec.forEach(function (x) { c30 += x[2]; s30 += x[3]; if (x[0] === "qbd" || x[0] === "qbo" || x[0] === "quickbooks") qb30 += x[2]; if (x[1] === "setup") setup30 += x[2]; });
+    var qb = ROWS.filter(isQb), flaggedQb = flagged.filter(isQb);
+    var tiles = [
+      { label: "QuickBooks open", value: fmtNum(qb.length), sub: fmtNum(flaggedQb.length) + " flagged" },
+      { label: "Created, last 30 days", value: fmtNum(c30), sub: fmtNum(qb30) + " QuickBooks" },
+      { label: "Setup requests, 30 days", value: fmtNum(setup30), sub: c30 ? Math.round(setup30 / c30 * 100) + "% of created" : "" },
+      { label: "Solved so far", value: fmtNum(s30), sub: "of those " + fmtNum(c30) + " created" }
+    ];
+    document.getElementById("integrationTiles").innerHTML = tiles.map(function (t) {
+      return '<div class="q-tile"><div class="kpi-label">' + t.label + '</div><div class="kpi-value">' + t.value + '</div><div class="kpi-sub">' + t.sub + '</div></div>';
+    }).join("");
+    document.getElementById("integrationNote").textContent = fmtNum(ROWS.length) + " open · click an integration for its tickets · GAL tickets included here";
+  }
+
+  // ---- Setup & integration requests (GAL excluded, it waits on Dev). A review hides one for 7 days. ----
+  function renderSetupSection() {
+    var all = workingRows.filter(function (r) { return r[RC.setup]; });
+    var active = all.filter(function (r) { return !snoozed(String(r[RC.id])); });
+    var qbd = all.filter(function (r) { return r[RC.integration] === "qbd"; }).length, qbo = all.filter(function (r) { return r[RC.integration] === "qbo"; }).length;
+    document.getElementById("setupNote").textContent = fmtNum(all.length) + " open (" + qbd + " QBD, " + qbo + " QBO) · oldest activity first · a review hides one for 7 days";
+    document.getElementById("setupList").innerHTML = active.length ? renderTicketItemList(active, { showAssignee: true })
+      : '<div class="panel-empty">' + (all.length ? "Every setup request was reviewed in the last 7 days." : "No open setup requests right now.") + '</div>';
+    document.getElementById("setupSnoozed").innerHTML = snoozedHtml("setup", all.filter(function (r) { return snoozed(String(r[RC.id])); }));
+  }
+
+  // ---- Dev work closed, ticket still open ----
+  function renderGalDoneSection() {
+    var rows = ROWS.filter(function (r) { return galDoneRefs(r).length > 0; });
+    document.getElementById("galDoneNote").textContent = fmtNum(rows.length) + " open ticket" + (rows.length === 1 ? "" : "s") +
+      " whose GAL is Done in Jira · tell the customer, or solve the ticket";
+    document.getElementById("galDoneList").innerHTML = rows.length ? renderTicketItemList(rows, { showAssignee: true })
+      : '<div class="panel-empty">No open ticket is waiting on a GAL that is already closed.</div>';
+  }
+
+  // ---- ES Escalations (integrations) ----
+  function renderEsSection() {
+    document.getElementById("esNote").textContent =
+      fmtNum(ES_ROWS.length) + " open ES " + (ES_ROWS.length === 1 ? "issue" : "issues") + " with an integration component" +
+      " · reviews last for the day, so open ones come back every morning";
+    var listEl = document.getElementById("esList");
+    if (!ES_ROWS.length) { listEl.innerHTML = '<div class="panel-empty">No open ES escalations for integrations right now.</div>'; return; }
+    var sorted = ES_ROWS.slice().sort(function (a, b) { return (b[ES_RC.daysOpen] || 0) - (a[ES_RC.daysOpen] || 0); });
+    listEl.innerHTML = sorted.map(function (r) {
+      var id = "jira:" + r[ES_RC.key];
+      var rv = getReview(id);
+      var linkedHtml = r[ES_RC.linkedTicketId]
+        ? 'Linked from <a href="https://bqe.zendesk.com/agent/tickets/' + r[ES_RC.linkedTicketId] + '" target="_blank" rel="noopener">Zendesk #' + r[ES_RC.linkedTicketId] + '</a> (' + escapeHtml(STATUS_LABEL[r[ES_RC.linkedTicketStatus]] || r[ES_RC.linkedTicketStatus] || "") + ')'
+        : 'No linked open integration ticket found';
+      return '<div class="ticket-item' + (rv.reviewed ? " reviewed" : "") + '">' +
+        '<div class="ticket-item-head">' +
+          '<a href="' + r[ES_RC.url] + '" target="_blank" rel="noopener">' + escapeHtml(r[ES_RC.key]) + '</a>' +
+          '<span class="ticket-item-status">' + escapeHtml(r[ES_RC.status]) + '</span>' +
+          '<span class="flags-cell"><span class="chip chip-es">' + escapeHtml(r[ES_RC.priority] || "") + '</span>' + (r[ES_RC.tier] ? ' <span class="chip chip-int">' + escapeHtml(r[ES_RC.tier]) + '</span>' : '') + (r[ES_RC.overdue] ? ' <span class="chip chip-awaiting">Overdue</span>' : '') + '</span>' +
+        '</div>' +
+        '<div class="ticket-item-subject">' + escapeHtml(r[ES_RC.summary] || "(no summary)") + '</div>' +
+        '<div class="ticket-item-meta">' + (r[ES_RC.company] ? escapeHtml(r[ES_RC.company]) : "&mdash;") + ' &middot; ' + escapeHtml(r[ES_RC.assignee]) + ' &middot; ' + fmtNum(r[ES_RC.daysOpen]) + 'd open</div>' +
+        '<div class="ticket-item-meta">' + linkedHtml + '</div>' +
+        reviewControlsHtml(id, rv) +
+        '</div>';
+    }).join("");
+  }
+
+  // ---- Wiring ----
+  // One function so a "recheck" click re-renders every section a ticket might appear in.
+  function renderAll() {
+    derive();
+    renderKPIs();
+    renderIntegrationSection();
+    renderSetupSection();
+    renderGalDoneSection();
+    renderTierChart();
+    renderAssigneeChart();
+    renderBackforthAssigneeChart();
+    renderEsSection();
+    renderGalSection();
+    renderStatusChart();
+    renderReasonChart();
+    renderDetailChart();
+    renderGroupChart();
+    renderSuggestions();
+    renderTable();
+    renderTrendChart();
+  }
+
+  // =====================================================================================
+  // Hosted board: sign-in, refresh
+  // =====================================================================================
+  var TZ = "America/Los_Angeles";
+  // No live queue on this board, so it refreshes every 15 minutes and only while the tab is visible.
+  var REFRESH_MS = 15 * 60 * 1000;
+  var fetchedAt = 0;
+  var ptFmt = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" });
+  var ptDayFmt = new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "short", month: "numeric", day: "numeric" });
+  function fmtClock(ms) { return ptFmt.format(new Date(ms)) + " PT"; }
+  function setStatus(msg, bad) {
+    document.getElementById("genDate").textContent = msg;
+    document.getElementById("liveDot").className = "snapshot-dot " + (bad ? "stale" : "live");
+  }
+
+  // ---- load and refresh ----
+  var renderPending = false;
+  function typing() { var a = document.activeElement; return !!(a && a.closest && a.closest("#board") && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type === "text"); }
+  function apply() {
+    NOW = Date.now();
+    ROWS = buildRows(DATA.tickets || []);
+    HISTORY = (DATA.history || []).map(function (h) { return [Date.parse(h[0]), h[1], h[2], h[3], h[4], h[5], h[6] || 0, h[7] || 0, h[8] || 0, h[9] || 0]; });
+    ES_ROWS = buildEsRows(DATA.es || [], DATA.es_links || {}, ROWS);
+    REVIEW_RULE = {};
+    ROWS.forEach(function (r) { if (r[RC.gal] || r[RC.flagBackforth] || r[RC.setup]) REVIEW_RULE[String(r[RC.id])] = "week"; });
+    ES_ROWS.forEach(function (e) { REVIEW_RULE["jira:" + e[ES_RC.key]] = "day"; });
+    GENERATED_AT = fmtClock(fetchedAt);
+    // Don't redraw the ticket sections while someone is typing a note (it would drop their cursor).
+    if (typing()) renderPending = true; else { renderPending = false; renderAll(); }
+    var s = DATA.sync || {}, zdAge = s.zd ? (Date.now() - Date.parse(s.zd)) / 60000 : null;
+    setStatus("Updated " + fmtClock(fetchedAt) + (s.zd ? " · tickets synced " + fmtClock(Date.parse(s.zd)) : "") +
+      (s.jira ? " · ES synced " + fmtClock(Date.parse(s.jira)) : "") + " · refreshes every 15 min", zdAge !== null && zdAge > 15);
+  }
+  document.addEventListener("focusout", function () { setTimeout(function () { if (renderPending && !typing()) { renderPending = false; renderAll(); } }, 0); });
+  var loading = false;
+  function load() {
+    if (loading) return; loading = true;
+    BQEBoard.api(BOARD).then(function (j) {
+      fetchedAt = Date.now(); DATA = j; VIEWER = j.viewer; REVIEWS = j.reviews || {};
+      apply();
+    }).catch(function (e) {
+      setStatus("Couldn't refresh (" + e.message + "). Showing the last data.", true);
+    }).then(function () { loading = false; });
+  }
+  // Coming back to a tab whose data is older than the refresh interval loads it right away.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && DATA && Date.now() - fetchedAt >= REFRESH_MS) load();
+  });
+
+  // ---- Last week and Stats: iw_week_report() and iw_weekly_stats() (supabase/integrations_week.sql), loaded on click ----
+  // Weeks run Sunday to Saturday, Pacific. dir: 1 = higher is better, -1 = lower is better, 0 = neutral
+  function wrDur(min) {
+    if (min === null || min === undefined) return "n/a";
+    if (min < 60) return Math.round(min) + "m";
+    if (min < 1440) return (min / 60).toFixed(1) + "h";
+    return (min / 1440).toFixed(1) + "d";
+  }
+  function wrMoney(cents) { return "$" + Math.round(cents / 100).toLocaleString(); }
+  function wrDate(s) { var p = String(s).split("-"); return Number(p[1]) + "/" + Number(p[2]); }
+  function wrVal(row, v) {
+    if (v === null || v === undefined) return "n/a";
+    if (row.fmt === "dur") return wrDur(v);
+    if (row.fmt === "pct") return v + "%";
+    if (row.fmt === "usd") return wrMoney(v);
+    return (row.signed && v > 0 ? "+" : "") + fmtNum(v);
+  }
+  function wrChange(row, cur, prev) {
+    if (cur === null || cur === undefined || prev === null || prev === undefined) return { text: "", cls: "wr-same" };
+    var d = cur - prev;
+    var cls = d === 0 || !row.dir ? "wr-same" : (d > 0) === (row.dir > 0) ? "wr-better" : "wr-worse";
+    var text = d === 0 ? "same" : row.fmt === "dur" ? (d > 0 ? "+" : "-") + wrDur(Math.abs(d)) : row.fmt === "pct" ? (d > 0 ? "+" : "") + d + " pts" :
+      row.fmt === "usd" ? (d > 0 ? "+" : "-") + wrMoney(Math.abs(d)) : (d > 0 ? "+" : "") + fmtNum(d);
+    return { text: text, cls: cls };
+  }
+  function copyText(btn, text, label) {
+    function flash(ok) { btn.textContent = ok ? "Copied!" : "Copy failed"; btn.classList.toggle("copied", ok); setTimeout(function () { btn.textContent = label; btn.classList.remove("copied"); }, 1800); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { flash(true); }).catch(function () { flash(false); });
+    else {
+      try {
+        var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        btn.closest("dialog").appendChild(ta); ta.select(); var ok = document.execCommand("copy"); ta.remove(); flash(ok);
+      } catch (err) { flash(false); }
+    }
+  }
+  function wrDlgFail(bodyId, what, e) {
+    document.getElementById(bodyId).innerHTML = '<div class="wr-foot">Could not load ' + what + ': ' + escapeHtml(String(e && e.message || e)) + '</div>';
+  }
+
+  // Last week
+  var WR_ROWS = [
+    { group: "Volume" },
+    { label: "Tickets created", get: function (w) { return w.created; }, dir: 0 },
+    { label: "QuickBooks Desktop created", get: function (w) { return w.created_qbd; }, dir: 0 },
+    { label: "QuickBooks Online created", get: function (w) { return w.created_qbo; }, dir: 0 },
+    { label: "Setup requests created", get: function (w) { return w.created_setup; }, dir: 0 },
+    { label: "Tickets solved", get: function (w) { return w.solved; }, dir: 1 },
+    { label: "Net change (created minus solved)", get: function (w) { return w.created - w.solved; }, dir: -1, signed: true },
+    { group: "Speed (tickets solved that week)" },
+    { label: "Median first reply", get: function (w) { return w.reply_median_min; }, dir: -1, fmt: "dur" },
+    { label: "Median time to first solve", get: function (w) { return w.resolution_median_min; }, dir: -1, fmt: "dur" },
+    { label: "Solved within 24 hours", get: function (w) { return w.solved ? Math.round(w.solved_24h / w.solved * 100) : null; }, dir: 1, fmt: "pct" },
+    { group: "Backlog at end of week" },
+    { label: "Open tickets", get: function (w) { return w.backlog ? w.backlog.open : null; }, dir: -1 },
+    { label: "Flagged 7+ days", get: function (w) { return w.backlog ? w.backlog.stale : null; }, dir: -1 },
+    { label: "QuickBooks Desktop open", get: function (w) { return w.backlog ? w.backlog.qbd : null; }, dir: -1 },
+    { label: "QuickBooks Online open", get: function (w) { return w.backlog ? w.backlog.qbo : null; }, dir: -1 },
+    { label: "Setup requests open", get: function (w) { return w.backlog ? w.backlog.setup : null; }, dir: 0 },
+    { label: "With Dev (GAL)", get: function (w) { return w.gal_open; }, dir: -1 }
+  ];
+  var WR = null;
+  function wrAsOf(w) {
+    if (!w.backlog) return "no snapshot";
+    return new Date(w.backlog.ts).toLocaleString("en-US", { timeZone: TZ, weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) + " PT";
+  }
+  function renderWeekReport() {
+    var cur = WR[0], prev = WR[1];
+    document.getElementById("weekReportTitle").textContent = "Last week: " + wrDate(cur.start) + " to " + wrDate(cur.end);
+    var html = '<table class="wr-table"><thead><tr><th></th><th>' + wrDate(cur.start) + "-" + wrDate(cur.end) + '</th><th>' + wrDate(prev.start) + "-" + wrDate(prev.end) + '</th><th>Change</th></tr></thead><tbody>';
+    WR_ROWS.forEach(function (row) {
+      if (row.group) { html += '<tr class="wr-group"><td colspan="4">' + escapeHtml(row.group) + '</td></tr>'; return; }
+      var a = row.get(cur), b = row.get(prev), c = wrChange(row, a, b);
+      html += '<tr><td>' + escapeHtml(row.label) + '</td><td>' + wrVal(row, a) + '</td><td>' + wrVal(row, b) + '</td><td class="' + c.cls + '">' + c.text + '</td></tr>';
+    });
+    html += '</tbody></table><div class="wr-foot">Weeks run Sunday to Saturday, Pacific. Tickets are the integration set this board uses (Integrations Team group, Module Integrations, the Integrations-Area field, or a QuickBooks, Xero or MYOB subject), GAL included. ' +
+      'Speed uses Zendesk calendar time for tickets solved that week; first reply is only known for ' + fmtNum(cur.reply_n) + ' of ' + fmtNum(cur.solved) + ' (' + fmtNum(prev.reply_n) + ' of ' + fmtNum(prev.solved) + ' the week before). ' +
+      'Backlog is the last hourly snapshot before the week ended (snapshots start 11/25/2026): ' + escapeHtml(wrAsOf(cur)) + ' and ' + escapeHtml(wrAsOf(prev)) + '. ' +
+      'With Dev (GAL) is rebuilt from ticket created and solved times, so it is the GAL tickets open when the week ended.</div>';
+    document.getElementById("weekReportBody").innerHTML = html;
+  }
+  function weekReportText() {
+    var cur = WR[0], prev = WR[1];
+    var lines = ["Integration tickets, week of " + wrDate(cur.start) + " to " + wrDate(cur.end) + " (vs " + wrDate(prev.start) + " to " + wrDate(prev.end) + ")"];
+    WR_ROWS.forEach(function (row) {
+      if (row.group) { lines.push("", row.group); return; }
+      var a = row.get(cur), b = row.get(prev), c = wrChange(row, a, b);
+      lines.push("- " + row.label + ": " + wrVal(row, a) + " (prior " + wrVal(row, b) + (c.text && c.text !== "same" ? ", " + c.text : "") + ")");
+    });
+    lines.push("", "Backlog as of " + wrAsOf(cur) + ".");
+    return lines.join("\n");
+  }
+  document.getElementById("weekReportBtn").addEventListener("click", function () {
+    document.getElementById("weekReport").showModal();
+    if (WR) return;
+    BQEBoard.api(BOARD + "?week=1").then(function (j) {
+      var wk = j.week_report || [];
+      if (wk.length !== 2) { document.getElementById("weekReportBody").innerHTML = '<div class="wr-foot">No weekly report is available yet.</div>'; return; }
+      WR = wk; renderWeekReport();
+    }).catch(function (e) { wrDlgFail("weekReportBody", "the report", e); });
+  });
+  document.getElementById("weekReportClose").addEventListener("click", function () { document.getElementById("weekReport").close(); });
+  document.getElementById("weekReport").addEventListener("click", function (e) { if (e.target === this) this.close(); });
+  document.getElementById("weekReportCopy").addEventListener("click", function () { if (WR) copyText(this, weekReportText(), "Copy report"); });
+
+  // Stats: one entry per complete Sunday-Saturday week, newest first
+  function stPct(x, n) { return n ? Math.round(x / n * 1000) / 10 : null; }
+  function stShare(key) { return function (w) { return stPct(w[key], w.n); }; }
+  function stCount(key) { return function (w) { return " (" + w[key] + ")"; }; }
+  var ST_ROWS = [
+    { group: "Volume" },
+    { label: "Customer tickets created", get: function (w) { return w.n; }, dir: 0, fmt: "int" },
+    { label: "Of those, solved by now", get: function (w) { return w.solved_now; }, dir: 0, fmt: "int" },
+    { group: "What they were about" },
+    { label: "QuickBooks Desktop", get: stShare("qbd"), extra: stCount("qbd"), dir: 0, fmt: "pct" },
+    { label: "QuickBooks Online", get: stShare("qbo"), extra: stCount("qbo"), dir: 0, fmt: "pct" },
+    { label: "Setup requests", get: stShare("setup"), extra: stCount("setup"), dir: 0, fmt: "pct" },
+    { label: "Sent to Dev (GAL)", get: stShare("gal"), extra: stCount("gal"), dir: 0, fmt: "pct" },
+    { label: "Escalated to L3 (ES case)", get: stShare("es_linked"), extra: stCount("es_linked"), dir: 0, fmt: "pct" },
+    { group: "Speed" },
+    { label: "First reply within 4 hours", get: function (w) { return stPct(w.reply_within_4h, w.reply_n); }, extra: function (w) { return " (" + w.reply_within_4h + " of " + w.reply_n + ")"; }, dir: 1, fmt: "pct" },
+    { label: "Median first reply (calendar)", get: function (w) { return w.reply_median_min; }, dir: -1, fmt: "min" },
+    { label: "Median resolution time", get: function (w) { return w.resolution_median_h; }, dir: -1, fmt: "h" },
+    { label: "Same-day close (share of all tickets)", get: function (w) { return stPct(w.same_day, w.n); }, extra: stCount("same_day"), dir: 1, fmt: "pct" }
+  ];
+  var ST = { weeks: null, idx: 0 };
+  function stFmt(row, v) {
+    if (v === null || v === undefined) return "n/a";
+    if (row.fmt === "pct") return v.toFixed(1) + "%";
+    if (row.fmt === "min") return v.toFixed(1) + " min";
+    if (row.fmt === "h") return v.toFixed(1) + "h";
+    return fmtNum(v);
+  }
+  function stVal(row, w) { var v = row.get(w); return stFmt(row, v) + (v !== null && v !== undefined && row.extra ? row.extra(w) : ""); }
+  function stChange(row, a, b) {
+    if (a === null || a === undefined || b === null || b === undefined) return { text: "", cls: "wr-same" };
+    var d = Math.round((a - b) * 10) / 10;
+    if (d === 0) return { text: "same", cls: "wr-same" };
+    var cls = !row.dir ? "wr-same" : (d > 0) === (row.dir > 0) ? "wr-better" : "wr-worse";
+    var unit = row.fmt === "pct" ? " pts" : row.fmt === "min" ? " min" : row.fmt === "h" ? "h" : "";
+    return { text: (d > 0 ? "+" : "-") + Math.abs(d).toFixed(row.fmt === "int" ? 0 : 1) + unit, cls: cls };
+  }
+  function stWeekLabel(w) { return wrDate(w.week_start) + " to " + wrDate(w.week_end); }
+  function stSpark(label, vals, sel, fmtv) {
+    var pts = vals.map(function (v, i) { return { v: v, i: i }; }).filter(function (p) { return p.v !== null && p.v !== undefined; });
+    if (pts.length < 2) return "";
+    var mn = Math.min.apply(null, pts.map(function (p) { return p.v; })), mx = Math.max.apply(null, pts.map(function (p) { return p.v; }));
+    var W = 180, H = 44, pad = 4, span = mx - mn || 1, n = vals.length - 1 || 1;
+    function X(i) { return pad + (W - 2 * pad) * i / n; }
+    function Y(v) { return H - pad - (H - 2 * pad) * (v - mn) / span; }
+    var line = pts.map(function (p) { return X(p.i).toFixed(1) + "," + Y(p.v).toFixed(1); }).join(" ");
+    var dots = pts.map(function (p) { return '<circle class="' + (p.i === sel ? "st-dot-sel" : "st-dot") + '" cx="' + X(p.i).toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="' + (p.i === sel ? 3.4 : 2) + '"></circle>'; }).join("");
+    var cur = vals[sel];
+    return '<div class="st-trend"><div class="st-t-label">' + escapeHtml(label) + '</div><div class="st-t-val">' + (cur === null || cur === undefined ? "n/a" : fmtv(cur)) + '</div>' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + escapeHtml(label) + ' by week"><polyline class="st-line" points="' + line + '"></polyline>' + dots + '</svg></div>';
+  }
+  // Solved per agent: everyone who solved a ticket in either week, this week's solved first.
+  function stAgentTable(w, p) {
+    var rows = {}, order = [];
+    (w.agents || []).forEach(function (a) { rows[a.id] = { name: a.name, cur: a.solved, prev: null }; order.push(a.id); });
+    if (p) (p.agents || []).forEach(function (a) { if (!rows[a.id]) { rows[a.id] = { name: a.name, cur: 0, prev: a.solved }; order.push(a.id); } else rows[a.id].prev = a.solved; });
+    return order.map(function (id) { return rows[id]; });
+  }
+  function renderStats() {
+    var weeks = ST.weeks, w = weeks[ST.idx], p = weeks[ST.idx + 1] || null;
+    document.getElementById("statsTitle").textContent = "Weekly stats: " + stWeekLabel(w);
+    var html = '<table class="wr-table"><thead><tr><th></th><th>' + stWeekLabel(w) + '</th><th>' + (p ? stWeekLabel(p) : "No earlier week") + '</th><th>Change</th></tr></thead><tbody>';
+    ST_ROWS.forEach(function (row) {
+      if (row.group) { html += '<tr class="wr-group"><td colspan="4">' + escapeHtml(row.group) + '</td></tr>'; return; }
+      var a = row.get(w), b = p ? row.get(p) : null, c = stChange(row, a, b);
+      html += '<tr><td>' + escapeHtml(row.label) + '</td><td>' + escapeHtml(stVal(row, w)) + '</td><td class="st-muted">' + (p ? escapeHtml(stVal(row, p)) : "n/a") + '</td><td class="' + c.cls + '">' + c.text + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    var ag = stAgentTable(w, p);
+    if (ag.length) {
+      html += '<h3 class="st-sub">Solved per agent</h3><table class="wr-table"><thead><tr><th>Agent</th><th>Solved</th><th>Solved, prior week</th></tr></thead><tbody>';
+      ag.forEach(function (r) { html += '<tr><td>' + escapeHtml(r.name) + '</td><td>' + fmtNum(r.cur) + '</td><td class="st-muted">' + (r.prev === null ? (p ? "0" : "n/a") : fmtNum(r.prev)) + '</td></tr>'; });
+      html += '</tbody></table>';
+    }
+    var asc = weeks.slice().reverse(), sel = asc.length - 1 - ST.idx;
+    function series(fn) { return asc.map(fn); }
+    html += '<h3 class="st-sub">Trend, last ' + asc.length + ' weeks</h3><div class="st-trends">' +
+      stSpark("Tickets created", series(function (s) { return s.n; }), sel, function (v) { return fmtNum(v); }) +
+      stSpark("First reply within 4h", series(function (s) { return stPct(s.reply_within_4h, s.reply_n); }), sel, function (v) { return v.toFixed(1) + "%"; }) +
+      stSpark("Same-day close", series(function (s) { return stPct(s.same_day, s.n); }), sel, function (v) { return v.toFixed(1) + "%"; }) +
+      stSpark("Median resolution", series(function (s) { return s.resolution_median_h; }), sel, function (v) { return v.toFixed(1) + "h"; }) +
+      stSpark("QuickBooks Desktop", series(function (s) { return stPct(s.qbd, s.n); }), sel, function (v) { return v.toFixed(1) + "%"; }) +
+      stSpark("Escalated to L3", series(function (s) { return stPct(s.es_linked, s.n); }), sel, function (v) { return v.toFixed(1) + "%"; }) + '</div>';
+    html += '<div class="wr-foot">Weeks run Sunday to Saturday, Pacific, and cover integration tickets created that week (Integrations Team group, Module Integrations, the Integrations-Area field, or a QuickBooks, Xero or MYOB subject; as they are now). ' +
+      'Solved counts and medians are as of now, so a recent week fills in as its tickets close. First reply and resolution use Zendesk calendar time, not business hours. ' +
+      'Sent to Dev counts a GAL in the subject or GAL field today; L3 counts the jira_escalated tag today. Solved per agent counts tickets solved in the week by assignee, whenever they were created.</div>';
+    document.getElementById("statsBody").innerHTML = html;
+  }
+  function statsText() {
+    var weeks = ST.weeks, w = weeks[ST.idx], p = weeks[ST.idx + 1] || null;
+    var lines = ["Integrations stats, week of " + stWeekLabel(w) + (p ? " (vs " + stWeekLabel(p) + ")" : "")];
+    ST_ROWS.forEach(function (row) {
+      if (row.group) { lines.push("", row.group); return; }
+      var a = row.get(w), b = p ? row.get(p) : null, c = stChange(row, a, b);
+      lines.push("- " + row.label + ": " + stVal(row, w) + (p ? " (prior " + stVal(row, p) + (c.text && c.text !== "same" ? ", " + c.text : "") + ")" : ""));
+    });
+    var ag = stAgentTable(w, p);
+    if (ag.length) { lines.push("", "Solved per agent"); ag.forEach(function (r) { lines.push("- " + r.name + ": " + r.cur); }); }
+    return lines.join("\n");
+  }
+  document.getElementById("statsBtn").addEventListener("click", function () {
+    document.getElementById("statsDlg").showModal();
+    if (ST.weeks) return;
+    BQEBoard.api(BOARD + "?stats=1").then(function (j) {
+      var weeks = (j.weeks || []).filter(function (x) { return x && x.n !== undefined; });
+      if (!weeks.length) { document.getElementById("statsBody").innerHTML = '<div class="wr-foot">No weekly stats are available yet.</div>'; return; }
+      ST.weeks = weeks; ST.idx = 0;
+      var sel = document.getElementById("statsWeek");
+      sel.innerHTML = weeks.map(function (x, i) { return '<option value="' + i + '">' + escapeHtml(stWeekLabel(x)) + '</option>'; }).join("");
+      sel.value = "0"; renderStats();
+    }).catch(function (e) { wrDlgFail("statsBody", "the stats", e); });
+  });
+  document.getElementById("statsWeek").addEventListener("change", function () { ST.idx = Number(this.value) || 0; renderStats(); });
+  document.getElementById("statsClose").addEventListener("click", function () { document.getElementById("statsDlg").close(); });
+  document.getElementById("statsDlg").addEventListener("click", function (e) { if (e.target === this) this.close(); });
+  document.getElementById("statsCopy").addEventListener("click", function () { if (ST.weeks) copyText(this, statsText(), "Copy stats"); });
+
+  // ---- theme ----
+  var THEME_KEY = "bqeBoards.theme";
+  function applyTheme(t) { if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme"); }
+  try { applyTheme(localStorage.getItem(THEME_KEY)); } catch (e) {}
+  document.getElementById("themeBtn").addEventListener("click", function () {
+    var cur = document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    var t = cur === "dark" ? "light" : "dark";
+    applyTheme(t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  });
+
+  // ---- sign-in, who's viewing ----
+  var refreshTimer = null;
+  function showSignin(msg) {
+    clearInterval(refreshTimer); refreshTimer = null;
+    document.getElementById("board").hidden = true;
+    document.getElementById("topbar").hidden = true;
+    document.getElementById("signin").hidden = false;
+    document.getElementById("signinMsg").textContent = msg || "";
+  }
+  function renderViewers(people) {
+    document.getElementById("viewers").innerHTML = people.map(function (p) {
+      return '<span class="viewer-dot' + (p.me ? " me" : "") + '" title="' + escapeHtml(p.name + (p.me ? " (you)" : "")) + '">' + escapeHtml(p.initials) + '</span>';
+    }).join("");
+  }
+  document.getElementById("signInBtn").addEventListener("click", function () {
+    document.getElementById("signinMsg").textContent = "";
+    BQEBoard.signIn().catch(function (e) { showSignin(e.message); });
+  });
+  document.getElementById("signOutBtn").addEventListener("click", function () { BQEBoard.signOut(); });
+  // ---- Arrange: each person's section order, saved on the server so it follows them (bqe-board.js) ----
+  var layout = null;
+  document.getElementById("arrangeBtn").addEventListener("click", function () {
+    if (!layout) return;
+    var on = layout.toggle();
+    this.textContent = on ? "Done" : "Arrange";
+    this.setAttribute("aria-pressed", String(on));
+    document.getElementById("resetLayoutBtn").hidden = !on;
+  });
+  document.getElementById("resetLayoutBtn").addEventListener("click", function () { if (layout) layout.reset(); });
+  BQEBoard.start({
+    board: BOARD,
+    onSignIn: showSignin,
+    onReady: function (v) {
+      VIEWER = v;
+      document.getElementById("signin").hidden = true;
+      document.getElementById("board").hidden = false;
+      document.getElementById("topbar").hidden = false;
+      document.getElementById("viewerName").innerHTML = "Viewing: <b>" + escapeHtml(v.name) + "</b>";
+      BQEBoard.presence(renderViewers);
+      if (!layout) layout = BQEBoard.arrange(document.getElementById("board"));
+      load();
+      if (!refreshTimer) refreshTimer = setInterval(function () { if (document.visibilityState === "visible") load(); }, REFRESH_MS);
+    }
+  });
+
+  // ---- pick up a newly published version of this page (checked every 5 min, never while typing) ----
+  var pageHash = null;
+  function hashText(s) { return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (b) { return Array.from(new Uint8Array(b)).join(","); }); }
+  function checkVersion() {
+    if (!window.crypto || !crypto.subtle || location.protocol === "file:") return;
+    fetch(location.pathname, { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : null; }).then(function (t) {
+      if (!t) return;
+      return hashText(t).then(function (h) { if (pageHash === null) pageHash = h; else if (h !== pageHash && !typing()) location.reload(); });
+    }).catch(function () {});
+  }
+  checkVersion();
+  setInterval(checkVersion, 5 * 60 * 1000);
+})();
+</script>
+</body>
+</html>
